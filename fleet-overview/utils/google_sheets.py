@@ -2,6 +2,7 @@
 
 import os
 import pandas as pd
+import streamlit as st
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
@@ -14,21 +15,21 @@ def get_credentials_path() -> str:
 def get_gspread_client(credentials_path: str = None):
     """
     Initialize authenticated gspread client using service account.
-
-    Args:
-        credentials_path: Path to service account JSON file.
-                         Defaults to GOOGLE_CREDENTIALS_PATH env var or 'credentials.json'
-
-    Returns:
-        Authenticated gspread client
-
-    Raises:
-        FileNotFoundError: If credentials file doesn't exist
-        Exception: If authentication fails
+    Supports both Streamlit secrets (for cloud) and local credentials file.
     """
     import gspread
     from google.oauth2.service_account import Credentials
 
+    # Try Streamlit secrets first (for cloud deployment)
+    try:
+        if 'gcp_service_account' in st.secrets:
+            creds_dict = dict(st.secrets['gcp_service_account'])
+            creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+            return gspread.authorize(creds)
+    except Exception:
+        pass
+
+    # Fall back to credentials file (for local development)
     if credentials_path is None:
         credentials_path = get_credentials_path()
 
@@ -46,18 +47,6 @@ def get_gspread_client(credentials_path: str = None):
 def load_from_google_sheets(sheet_url_or_id: str, credentials_path: str = None) -> pd.DataFrame:
     """
     Load data from a Google Sheet and return as DataFrame.
-
-    Args:
-        sheet_url_or_id: Full Google Sheets URL or just the sheet ID
-        credentials_path: Path to service account JSON file (optional)
-
-    Returns:
-        pandas DataFrame with sheet data
-
-    Raises:
-        FileNotFoundError: If credentials file doesn't exist
-        gspread.exceptions.SpreadsheetNotFound: If sheet doesn't exist or isn't shared
-        Exception: For other API errors
     """
     import gspread
 
@@ -73,14 +62,13 @@ def load_from_google_sheets(sheet_url_or_id: str, credentials_path: str = None) 
         raise Exception(
             "Google Sheet not found. Please check that:\n"
             "1. The URL/ID is correct\n"
-            "2. The sheet is shared with the service account email\n"
-            "   (found in your credentials.json under 'client_email')"
+            "2. The sheet is shared with the service account email"
         )
     except gspread.exceptions.APIError as e:
         if 'PERMISSION_DENIED' in str(e):
             raise Exception(
                 "Permission denied. Please share the Google Sheet with "
-                "the service account email (found in credentials.json under 'client_email')"
+                "the service account email"
             )
         raise
 
@@ -97,16 +85,32 @@ def load_from_google_sheets(sheet_url_or_id: str, credentials_path: str = None) 
 
 
 def check_credentials_exist(credentials_path: str = None) -> bool:
-    """Check if the credentials file exists."""
+    """Check if credentials are available (either secrets or file)."""
+    # Check Streamlit secrets first
+    try:
+        if 'gcp_service_account' in st.secrets:
+            return True
+    except Exception:
+        pass
+
+    # Check local file
     if credentials_path is None:
         credentials_path = get_credentials_path()
     return os.path.exists(credentials_path)
 
 
 def get_service_account_email(credentials_path: str = None) -> str:
-    """Extract the service account email from credentials file for sharing instructions."""
+    """Extract the service account email from credentials."""
     import json
 
+    # Try Streamlit secrets first
+    try:
+        if 'gcp_service_account' in st.secrets:
+            return st.secrets['gcp_service_account'].get('client_email')
+    except Exception:
+        pass
+
+    # Fall back to file
     if credentials_path is None:
         credentials_path = get_credentials_path()
 
