@@ -299,13 +299,39 @@ def main():
             filtered_df, DOCK_IMAGE_COMPONENTS
         )
 
+        # Add top spacing
+        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+
+        # CSS to align all header elements vertically
+        st.markdown("""
+            <style>
+                /* Align header columns vertically */
+                [data-testid="column"] {
+                    display: flex;
+                    align-items: center;
+                }
+                [data-testid="column"] > div {
+                    width: 100%;
+                }
+                /* Fix button height to match */
+                [data-testid="column"] .stButton button {
+                    height: 38px;
+                    margin: 0;
+                }
+                /* Fix selectbox height */
+                [data-testid="column"] .stSelectbox > div > div {
+                    min-height: 38px;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+
         # Header row with title and all controls
         header_col1, header_col2, header_col3, header_col4 = st.columns([2.5, 0.8, 1.2, 1.5])
 
         with header_col1:
             st.markdown(
                 """
-                <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif;">
+                <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif; line-height: 38px;">
                     Vector Dock Fleet Overview
                 </h1>
                 """,

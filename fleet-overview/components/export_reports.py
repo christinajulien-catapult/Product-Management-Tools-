@@ -251,8 +251,7 @@ def render_export_buttons(
     )
 
     if compact:
-        # Compact layout for top-right placement with vertical alignment
-        st.markdown("<div style='margin-top: 6px;'></div>", unsafe_allow_html=True)
+        # Compact layout for top-right placement
         col1, col2 = st.columns(2)
         with col1:
             st.download_button(
