@@ -348,7 +348,7 @@ def render_component_table(
                 )
         else:
             cols[3].markdown(
-                "<span style='color: #22c55e; font-size: 24px;'>✓</span>",
+                "<span style='color: #22c55e; font-size: 20px; font-weight: 700;'>—</span>",
                 unsafe_allow_html=True
             )
 
