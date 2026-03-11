@@ -261,6 +261,15 @@ def clear_data_state():
         del st.session_state[key]
 
 
+@st.dialog("Slack Message")
+def show_slack_dialog(slack_text: str):
+    """Show Slack message in a modal dialog."""
+    st.markdown("Copy this message to share in Slack:")
+    st.text_area("", slack_text, height=300, key="slack_modal_area", label_visibility="collapsed")
+    if st.button("Close", use_container_width=True):
+        st.rerun()
+
+
 def main():
     # Check if we have data loaded
     has_data = 'loaded_df' in st.session_state
@@ -402,20 +411,13 @@ def main():
             )
 
         with col5:
-            # Slack button
+            # Slack button - opens modal dialog
             if st.button("Slack Message", use_container_width=True, key="slack_btn"):
-                st.session_state['show_slack_copy'] = True
-
-        # Show Slack message modal if requested
-        if st.session_state.get('show_slack_copy', False):
-            slack_text = generate_slack_summary(
-                len(filtered_df), active_count, fleet_compliance, len(outdated_docks),
-                greengrass_compliance, dock_image_compliance, selected_region
-            )
-            st.text_area("Copy this Slack message:", slack_text, height=200, key="slack_copy_area")
-            if st.button("Done", key="slack_done_btn"):
-                st.session_state['show_slack_copy'] = False
-                st.rerun()
+                slack_text = generate_slack_summary(
+                    len(filtered_df), active_count, fleet_compliance, len(outdated_docks),
+                    greengrass_compliance, dock_image_compliance, selected_region
+                )
+                show_slack_dialog(slack_text)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
