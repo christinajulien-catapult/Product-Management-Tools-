@@ -284,11 +284,15 @@ def main():
                     disabled=not google_sheet_url or not check_credentials_exist()
                 )
             with col2:
-                if st.button("Clear Cache", use_container_width=True):
-                    if 'loaded_df' in st.session_state:
-                        del st.session_state['loaded_df']
-                    if 'last_refresh_time' in st.session_state:
-                        del st.session_state['last_refresh_time']
+                if st.button("📂 New File", use_container_width=True):
+                    # Clear all data-related session state
+                    for key in ['loaded_df', 'last_refresh_time', 'data_source_type']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+                    # Clear expand states
+                    keys_to_delete = [k for k in st.session_state.keys() if k.startswith('expand_')]
+                    for key in keys_to_delete:
+                        del st.session_state[key]
                     st.rerun()
 
             # Handle refresh
@@ -310,6 +314,19 @@ def main():
                 type=['csv', 'tsv'],
                 help="Upload your dock fleet data export"
             )
+
+            # Show "Load Different File" button when data is already loaded
+            if 'loaded_df' in st.session_state:
+                if st.button("📂 Load Different File", use_container_width=True):
+                    # Clear all data-related session state
+                    for key in ['loaded_df', 'last_refresh_time', 'data_source_type']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+                    # Clear expand states
+                    keys_to_delete = [k for k in st.session_state.keys() if k.startswith('expand_')]
+                    for key in keys_to_delete:
+                        del st.session_state[key]
+                    st.rerun()
 
         # Sample data option
         use_sample = st.checkbox("Use sample data (for demo)", value=False)
