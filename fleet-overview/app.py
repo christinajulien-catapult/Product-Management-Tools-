@@ -194,11 +194,15 @@ st.markdown("""
             color: #ef4444 !important;
             background: transparent !important;
             border: none !important;
-            font-size: 13px !important;
+            font-size: 12px !important;
             padding: 0 !important;
-            min-height: 24px !important;
-            height: 24px !important;
-            line-height: 24px !important;
+            min-height: 20px !important;
+            max-height: 20px !important;
+            height: 20px !important;
+            line-height: 20px !important;
+            width: 55px !important;
+            min-width: 55px !important;
+            max-width: 55px !important;
         }
 
         button[data-testid="stBaseButton-primary"]:hover {
@@ -213,11 +217,15 @@ st.markdown("""
             color: #3b82f6 !important;
             background: transparent !important;
             border: none !important;
-            font-size: 13px !important;
+            font-size: 12px !important;
             padding: 0 !important;
-            min-height: 24px !important;
-            height: 24px !important;
-            line-height: 24px !important;
+            min-height: 20px !important;
+            max-height: 20px !important;
+            height: 20px !important;
+            line-height: 20px !important;
+            width: 55px !important;
+            min-width: 55px !important;
+            max-width: 55px !important;
         }
 
         button[data-testid="stBaseButton-secondary"]:hover {
