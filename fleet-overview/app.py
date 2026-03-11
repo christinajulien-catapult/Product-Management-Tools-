@@ -272,57 +272,15 @@ def main():
             st.error("No data loaded")
             return
 
-        # Header row with title and controls
-        header_col1, header_col2, header_col3, header_col4 = st.columns([3, 1, 1, 1])
+        # Region filter (needs to be before header for the value)
+        # Using a hidden container to get value first
+        region_options = ["All", "AU", "EU", "US"]
 
-        with header_col1:
-            st.markdown(
-                """
-                <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif;">
-                    Vector Dock Fleet Overview
-                </h1>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with header_col2:
-            # Region filter
-            region_options = ["All", "AU", "EU", "US"]
-            selected_region = st.selectbox(
-                "Region",
-                region_options,
-                index=0,
-                label_visibility="collapsed"
-            )
-
-        with header_col3:
-            # Load different file button
-            if st.button("📂 Load Different File", use_container_width=True):
-                clear_data_state()
-                st.rerun()
-
-        with header_col4:
-            # Show last refresh time
-            last_refresh = st.session_state.get('last_refresh_time')
-            if last_refresh:
-                time_ago = datetime.now() - last_refresh
-                minutes_ago = int(time_ago.total_seconds() / 60)
-                if minutes_ago < 1:
-                    time_str = "just now"
-                elif minutes_ago < 60:
-                    time_str = f"{minutes_ago}m ago"
-                else:
-                    hours = minutes_ago // 60
-                    time_str = f"{hours}h ago"
-                st.markdown(
-                    f"<p style='color: #64748b; font-size: 12px; margin: 8px 0;'>Loaded: {time_str}</p>",
-                    unsafe_allow_html=True
-                )
-
-        # Filter by region
+        # Calculate metrics first (need for export buttons)
+        # Use default region initially, will filter after
+        selected_region = st.session_state.get('selected_region', 'All')
         filtered_df = filter_by_region(df, selected_region)
 
-        # Calculate metrics
         active_df, active_count = calculate_active_docks(filtered_df)
         _, fleet_compliance = calculate_fleet_compliance(filtered_df)
         outdated_docks = get_docks_needing_update(filtered_df)
@@ -341,9 +299,40 @@ def main():
             filtered_df, DOCK_IMAGE_COMPONENTS
         )
 
-        # Export buttons row
-        export_col1, export_col2 = st.columns([4, 1])
-        with export_col2:
+        # Header row with title and all controls
+        header_col1, header_col2, header_col3, header_col4 = st.columns([2.5, 0.8, 1.2, 1.5])
+
+        with header_col1:
+            st.markdown(
+                """
+                <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif;">
+                    Vector Dock Fleet Overview
+                </h1>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with header_col2:
+            # Region filter
+            new_region = st.selectbox(
+                "Region",
+                region_options,
+                index=region_options.index(selected_region),
+                label_visibility="collapsed",
+                key="region_select"
+            )
+            if new_region != selected_region:
+                st.session_state['selected_region'] = new_region
+                st.rerun()
+
+        with header_col3:
+            # Load different file button
+            if st.button("📂 Load Different File", use_container_width=True):
+                clear_data_state()
+                st.rerun()
+
+        with header_col4:
+            # Export buttons inline
             render_export_buttons(
                 total_docks=len(filtered_df),
                 active_docks=active_count,
