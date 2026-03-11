@@ -289,9 +289,11 @@ def render_component_table(
 ):
     """Render a component compliance table with expandable outdated dock views."""
 
-    # Section title
+    # Section title with emphasis
     st.markdown(
-        f"<h2 style='color: #f1f5f9; font-size: 20px; font-weight: 600; margin: 24px 0 16px 0; font-family: Montserrat, sans-serif;'>{title}</h2>",
+        f"""<h2 style='color: #f1f5f9; font-size: 22px; font-weight: 700; margin: 30px 0 20px 0;
+            font-family: Montserrat, sans-serif; padding-bottom: 10px;
+            border-bottom: 2px solid #3b82f6;'>{title}</h2>""",
         unsafe_allow_html=True
     )
 
@@ -349,7 +351,7 @@ def render_component_table(
 
         if comp['latest_beta']:
             cols[4].markdown(
-                f"<span style='background: #3b82f6; color: white; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;'>Beta</span> <span style='color: #f1f5f9; font-family: monospace; font-size: 14px;'>{comp['latest_beta']}</span>",
+                f"<span style='background: #3b82f6; color: white; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-right: 8px;'>Beta</span><span style='color: #f1f5f9; font-family: monospace; font-size: 14px;'>{comp['latest_beta']}</span>",
                 unsafe_allow_html=True
             )
         else:

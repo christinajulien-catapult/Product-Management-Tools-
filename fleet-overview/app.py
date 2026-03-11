@@ -455,6 +455,9 @@ def main():
             filtered_df
         )
 
+        # Bottom spacing for scroll room
+        st.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)
+
     else:
         # ===== NO DATA - UPLOAD VIEW =====
 
