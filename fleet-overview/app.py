@@ -187,13 +187,18 @@ st.markdown("""
             line-height: 1.2 !important;
         }
 
-        /* Primary button - red for outdated */
+        /* Primary button - red for outdated (table expand buttons) */
         button[data-testid="stBaseButton-primary"],
         button[data-testid="stBaseButton-primary"] p,
         button[data-testid="stBaseButton-primary"] span {
             color: #ef4444 !important;
             background: transparent !important;
             border: none !important;
+            font-size: 13px !important;
+            padding: 0 !important;
+            min-height: 24px !important;
+            height: 24px !important;
+            line-height: 24px !important;
         }
 
         button[data-testid="stBaseButton-primary"]:hover {
@@ -201,13 +206,18 @@ st.markdown("""
             border-radius: 4px !important;
         }
 
-        /* Secondary button - blue for beta */
+        /* Secondary button - blue for beta (table expand buttons) */
         button[data-testid="stBaseButton-secondary"],
         button[data-testid="stBaseButton-secondary"] p,
         button[data-testid="stBaseButton-secondary"] span {
             color: #3b82f6 !important;
             background: transparent !important;
             border: none !important;
+            font-size: 13px !important;
+            padding: 0 !important;
+            min-height: 24px !important;
+            height: 24px !important;
+            line-height: 24px !important;
         }
 
         button[data-testid="stBaseButton-secondary"]:hover {

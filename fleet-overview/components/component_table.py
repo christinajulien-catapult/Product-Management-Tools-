@@ -354,7 +354,7 @@ def render_component_table(
 
         if comp['latest_beta']:
             cols[4].markdown(
-                f"<span style='background: #3b82f6; color: white; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-right: 8px;'>Beta</span><span style='color: #f1f5f9; font-family: monospace; font-size: 14px;'>{comp['latest_beta']}</span>",
+                f"<span style='background: #3b82f6; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 10px;'>Beta</span><span style='color: #f1f5f9; font-family: monospace; font-size: 14px;'>{comp['latest_beta']}</span>",
                 unsafe_allow_html=True
             )
         else:
