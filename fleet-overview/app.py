@@ -20,7 +20,7 @@ from components.export_reports import render_export_buttons
 # Page config - no sidebar
 st.set_page_config(
     page_title="Vector Dock Fleet Overview",
-    page_icon="🔧",
+    page_icon="assets/dock_icon.png",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -326,34 +326,39 @@ def main():
         """, unsafe_allow_html=True)
 
         # Header row with title and all controls
-        header_col1, header_col2, header_col3, header_col4 = st.columns([2.5, 0.8, 1.2, 1.5])
+        header_col1, header_col2, header_col3, header_col4 = st.columns([2.2, 0.6, 1.2, 2])
 
         with header_col1:
-            st.markdown(
-                """
-                <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif; line-height: 38px;">
-                    Vector Dock Fleet Overview
-                </h1>
-                """,
-                unsafe_allow_html=True
-            )
+            # Title and region selector side by side
+            title_col, region_col = st.columns([3, 1])
+            with title_col:
+                st.markdown(
+                    """
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif; line-height: 38px;">
+                        Vector Dock Fleet Overview
+                    </h1>
+                    """,
+                    unsafe_allow_html=True
+                )
+            with region_col:
+                # Region filter
+                new_region = st.selectbox(
+                    "Region",
+                    region_options,
+                    index=region_options.index(selected_region),
+                    label_visibility="collapsed",
+                    key="region_select"
+                )
+                if new_region != selected_region:
+                    st.session_state['selected_region'] = new_region
+                    st.rerun()
 
         with header_col2:
-            # Region filter
-            new_region = st.selectbox(
-                "Region",
-                region_options,
-                index=region_options.index(selected_region),
-                label_visibility="collapsed",
-                key="region_select"
-            )
-            if new_region != selected_region:
-                st.session_state['selected_region'] = new_region
-                st.rerun()
+            pass  # Empty spacer
 
         with header_col3:
-            # Load different file button
-            if st.button("📂 Load Different File", use_container_width=True):
+            # Load different file button (no icon)
+            if st.button("Load Different File", use_container_width=True):
                 clear_data_state()
                 st.rerun()
 

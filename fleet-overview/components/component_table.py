@@ -345,7 +345,7 @@ def render_component_table(
                     args=(expand_key,)
                 )
         else:
-            cols[3].image("assets/very_nice.png", width=30)
+            cols[3].image("assets/good_job.jpg", width=50)
 
         if comp['latest_beta']:
             cols[4].markdown(
