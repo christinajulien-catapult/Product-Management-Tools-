@@ -14,7 +14,7 @@ from utils.metrics import (
 )
 from components.metrics_cards import render_metrics_cards
 from components.component_table import render_component_table
-from components.export_reports import render_export_buttons
+from components.export_reports import render_export_buttons, generate_pdf_report, generate_slack_summary
 
 
 # Page config - no sidebar
@@ -299,61 +299,85 @@ def main():
             filtered_df, DOCK_IMAGE_COMPONENTS
         )
 
-        # Add top spacing
-        st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
-
-        # CSS to align all header elements vertically and style region selector
+        # CSS for header styling
         st.markdown("""
             <style>
-                /* Align header columns vertically */
-                [data-testid="column"] {
+                /* Header container */
+                .header-row {
                     display: flex;
                     align-items: center;
+                    justify-content: space-between;
+                    padding: 20px 0 30px 0;
+                    gap: 20px;
                 }
-                [data-testid="column"] > div {
-                    width: 100%;
+                .header-left {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
                 }
-                /* Fix button height to match */
-                [data-testid="column"] .stButton button {
-                    height: 38px;
-                    margin: 0;
+                .header-right {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
                 }
-                /* Style region selector to pop more */
-                .stSelectbox > div > div {
-                    background-color: #475569 !important;
-                    border: 1px solid #64748b !important;
+                /* Consistent button styling */
+                .stButton button {
+                    height: 40px !important;
+                    padding: 0 20px !important;
                     border-radius: 6px !important;
-                    min-height: 38px !important;
+                    font-size: 14px !important;
+                    font-weight: 500 !important;
+                    background-color: #334155 !important;
+                    border: 1px solid #475569 !important;
+                    color: #f1f5f9 !important;
+                }
+                .stButton button:hover {
+                    background-color: #475569 !important;
+                    border-color: #64748b !important;
+                }
+                /* Style region selector */
+                .stSelectbox > div > div {
+                    background-color: #334155 !important;
+                    border: 1px solid #475569 !important;
+                    border-radius: 6px !important;
+                    min-height: 40px !important;
                 }
                 .stSelectbox > div > div > div {
                     color: #f1f5f9 !important;
-                    font-weight: 600 !important;
+                    font-weight: 500 !important;
+                    padding-top: 2px !important;
                 }
-                /* Dropdown arrow */
                 .stSelectbox svg {
                     fill: #f1f5f9 !important;
+                }
+                /* Download button styling */
+                .stDownloadButton button {
+                    height: 40px !important;
+                    padding: 0 20px !important;
+                    border-radius: 6px !important;
+                    font-size: 14px !important;
+                    font-weight: 500 !important;
+                    background-color: #334155 !important;
+                    border: 1px solid #475569 !important;
+                    color: #f1f5f9 !important;
+                }
+                .stDownloadButton button:hover {
+                    background-color: #475569 !important;
+                    border-color: #64748b !important;
                 }
             </style>
         """, unsafe_allow_html=True)
 
-        # Header row with title and all controls
-        header_col1, header_col2, header_col3, header_col4 = st.columns([2.5, 0.5, 1.2, 2])
+        # Clean header row
+        col1, col2, col3, col4, col5 = st.columns([2.8, 0.7, 1.3, 1, 1])
 
-        with header_col1:
-            # Title and region selector inline
+        with col1:
             st.markdown(
-                """
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif; white-space: nowrap;">
-                        Vector Dock Fleet Overview
-                    </h1>
-                </div>
-                """,
+                "<h1 style='margin: 0; font-size: 24px; font-weight: 700; color: #f1f5f9; font-family: Montserrat, sans-serif;'>Vector Dock Fleet Overview</h1>",
                 unsafe_allow_html=True
             )
 
-        with header_col2:
-            # Region filter right next to title
+        with col2:
             new_region = st.selectbox(
                 "Region",
                 region_options,
@@ -365,24 +389,40 @@ def main():
                 st.session_state['selected_region'] = new_region
                 st.rerun()
 
-        with header_col3:
-            # Load different file button (no icon)
+        with col3:
             if st.button("Load Different File", use_container_width=True):
                 clear_data_state()
                 st.rerun()
 
-        with header_col4:
-            # Export buttons inline
-            render_export_buttons(
-                total_docks=len(filtered_df),
-                active_docks=active_count,
-                fleet_compliance=fleet_compliance,
-                outdated_count=len(outdated_docks),
-                greengrass_components=greengrass_compliance,
-                dock_image_components=dock_image_compliance,
-                selected_region=selected_region,
-                compact=True
+        with col4:
+            # PDF Report button
+            pdf_bytes = generate_pdf_report(
+                len(filtered_df), active_count, fleet_compliance, len(outdated_docks),
+                greengrass_compliance, dock_image_compliance, selected_region
             )
+            st.download_button(
+                label="PDF Report",
+                data=pdf_bytes,
+                file_name=f"fleet_report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+
+        with col5:
+            # Slack button
+            if st.button("Slack Message", use_container_width=True, key="slack_btn"):
+                st.session_state['show_slack_copy'] = True
+
+        # Show Slack message modal if requested
+        if st.session_state.get('show_slack_copy', False):
+            slack_text = generate_slack_summary(
+                len(filtered_df), active_count, fleet_compliance, len(outdated_docks),
+                greengrass_compliance, dock_image_compliance, selected_region
+            )
+            st.text_area("Copy this Slack message:", slack_text, height=200, key="slack_copy_area")
+            if st.button("Done", key="slack_done_btn"):
+                st.session_state['show_slack_copy'] = False
+                st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
 
