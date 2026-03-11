@@ -299,26 +299,19 @@ def main():
             filtered_df, DOCK_IMAGE_COMPONENTS
         )
 
+        # Top spacing
+        st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
+
         # CSS for header styling
         st.markdown("""
             <style>
-                /* Header container */
-                .header-row {
+                /* Align columns to top */
+                [data-testid="column"] {
                     display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 20px 0 30px 0;
-                    gap: 20px;
+                    align-items: flex-start !important;
                 }
-                .header-left {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                }
-                .header-right {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
+                [data-testid="column"] > div {
+                    width: 100%;
                 }
                 /* Consistent button styling */
                 .stButton button {
@@ -373,7 +366,7 @@ def main():
 
         with col1:
             st.markdown(
-                "<h1 style='margin: 0; font-size: 24px; font-weight: 700; color: #f1f5f9; font-family: Montserrat, sans-serif;'>Vector Dock Fleet Overview</h1>",
+                "<h1 style='margin: 0; padding-top: 5px; font-size: 24px; font-weight: 700; color: #f1f5f9; font-family: Montserrat, sans-serif;'>Vector Dock Fleet Overview</h1>",
                 unsafe_allow_html=True
             )
 
