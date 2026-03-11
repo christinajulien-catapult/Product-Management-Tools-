@@ -347,7 +347,10 @@ def render_component_table(
                     args=(expand_key,)
                 )
         else:
-            cols[3].image("assets/thumbs_up.png", width=24)
+            cols[3].markdown(
+                "<span style='color: #22c55e; font-size: 24px;'>✓</span>",
+                unsafe_allow_html=True
+            )
 
         if comp['latest_beta']:
             cols[4].markdown(
