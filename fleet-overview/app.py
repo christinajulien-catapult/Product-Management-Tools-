@@ -348,6 +348,7 @@ def main():
                     color: #f1f5f9 !important;
                     font-weight: 500 !important;
                     padding-top: 2px !important;
+                    text-align: center !important;
                 }
                 .stSelectbox svg {
                     fill: #f1f5f9 !important;
