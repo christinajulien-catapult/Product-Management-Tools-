@@ -302,7 +302,7 @@ def main():
         # Add top spacing
         st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
 
-        # CSS to align all header elements vertically
+        # CSS to align all header elements vertically and style region selector
         st.markdown("""
             <style>
                 /* Align header columns vertically */
@@ -318,43 +318,52 @@ def main():
                     height: 38px;
                     margin: 0;
                 }
-                /* Fix selectbox height */
-                [data-testid="column"] .stSelectbox > div > div {
-                    min-height: 38px;
+                /* Style region selector to pop more */
+                .stSelectbox > div > div {
+                    background-color: #475569 !important;
+                    border: 1px solid #64748b !important;
+                    border-radius: 6px !important;
+                    min-height: 38px !important;
+                }
+                .stSelectbox > div > div > div {
+                    color: #f1f5f9 !important;
+                    font-weight: 600 !important;
+                }
+                /* Dropdown arrow */
+                .stSelectbox svg {
+                    fill: #f1f5f9 !important;
                 }
             </style>
         """, unsafe_allow_html=True)
 
         # Header row with title and all controls
-        header_col1, header_col2, header_col3, header_col4 = st.columns([2.2, 0.6, 1.2, 2])
+        header_col1, header_col2, header_col3, header_col4 = st.columns([2.5, 0.5, 1.2, 2])
 
         with header_col1:
-            # Title and region selector side by side
-            title_col, region_col = st.columns([3, 1])
-            with title_col:
-                st.markdown(
-                    """
-                    <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif; line-height: 38px;">
+            # Title and region selector inline
+            st.markdown(
+                """
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif; white-space: nowrap;">
                         Vector Dock Fleet Overview
                     </h1>
-                    """,
-                    unsafe_allow_html=True
-                )
-            with region_col:
-                # Region filter
-                new_region = st.selectbox(
-                    "Region",
-                    region_options,
-                    index=region_options.index(selected_region),
-                    label_visibility="collapsed",
-                    key="region_select"
-                )
-                if new_region != selected_region:
-                    st.session_state['selected_region'] = new_region
-                    st.rerun()
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         with header_col2:
-            pass  # Empty spacer
+            # Region filter right next to title
+            new_region = st.selectbox(
+                "Region",
+                region_options,
+                index=region_options.index(selected_region),
+                label_visibility="collapsed",
+                key="region_select"
+            )
+            if new_region != selected_region:
+                st.session_state['selected_region'] = new_region
+                st.rerun()
 
         with header_col3:
             # Load different file button (no icon)
