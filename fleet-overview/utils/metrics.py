@@ -140,10 +140,24 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
         else:
             outdated_count += 1
 
-    # Calculate percentages
+    # Calculate percentages - ensure non-zero counts never round to 0%,
+    # and incomplete counts never round to 100%
+    import math
     production_percentage = round((production_count / total) * 100) if total > 0 else 0
     beta_percentage = round((beta_count / total) * 100) if total > 0 else 0
     outdated_percentage = round((outdated_count / total) * 100) if total > 0 else 0
+
+    # If there are outdated docks, show at least 1% (don't hide them by rounding to 0)
+    if outdated_count > 0 and outdated_percentage == 0:
+        outdated_percentage = 1
+    # If there are outdated docks, production can't be 100%
+    if outdated_count > 0 and production_percentage == 100:
+        production_percentage = 99
+    # Same for beta
+    if beta_count > 0 and beta_percentage == 0:
+        beta_percentage = 1
+    if beta_count > 0 and production_percentage == 100:
+        production_percentage = 99
 
     return {
         'name': component_name,
