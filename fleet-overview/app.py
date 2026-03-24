@@ -291,7 +291,7 @@ def main():
         filtered_df = filter_by_region(df, selected_region)
 
         active_df, active_count = calculate_active_docks(filtered_df)
-        _, fleet_compliance = calculate_fleet_compliance(filtered_df)
+        _, fleet_compliance = calculate_fleet_compliance(filtered_df, full_df=df)
         outdated_docks = get_docks_needing_update(filtered_df)
 
         # Calculate regional counts from original data (before filtering)
@@ -300,12 +300,12 @@ def main():
             for region in ['AU', 'EU', 'US']:
                 regional_counts[region] = len(df[df['region'] == region])
 
-        # Calculate component compliance
+        # Calculate component compliance (use full df for determining latest versions)
         greengrass_compliance = calculate_all_component_compliance(
-            filtered_df, GREENGRASS_COMPONENTS
+            filtered_df, GREENGRASS_COMPONENTS, full_df=df
         )
         dock_image_compliance = calculate_all_component_compliance(
-            filtered_df, DOCK_IMAGE_COMPONENTS
+            filtered_df, DOCK_IMAGE_COMPONENTS, full_df=df
         )
 
         # Top spacing

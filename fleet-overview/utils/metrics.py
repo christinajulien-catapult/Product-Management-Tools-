@@ -55,7 +55,7 @@ def calculate_active_docks(df: pd.DataFrame, days: int = 14) -> Tuple[pd.DataFra
     return active_df, len(active_df)
 
 
-def calculate_component_compliance(df: pd.DataFrame, component_name: str, column: str) -> Dict:
+def calculate_component_compliance(df: pd.DataFrame, component_name: str, column: str, full_df: pd.DataFrame = None) -> Dict:
     """
     Calculate compliance statistics for a single component.
 
@@ -96,12 +96,15 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
             'total': 0,
         }
 
-    versions = df[column].dropna().tolist()
-    versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
+    # Use full (unfiltered) dataset to determine latest versions so that
+    # region filtering doesn't change what counts as "latest"
+    version_source = full_df if full_df is not None else df
+    all_versions = version_source[column].dropna().tolist() if column in version_source.columns else []
+    all_versions = [v for v in all_versions if isinstance(v, str) and v.strip() != '']
 
-    # Get latest versions
-    latest_production = get_latest_version(versions, "production")
-    latest_beta = get_latest_version(versions, "beta")
+    # Get latest versions from the full dataset
+    latest_production = get_latest_version(all_versions, "production")
+    latest_beta = get_latest_version(all_versions, "beta")
 
     latest_prod_semver = parse_semver(latest_production) if latest_production else None
     latest_beta_semver = parse_semver(latest_beta) if latest_beta else None
@@ -159,30 +162,32 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
     }
 
 
-def calculate_all_component_compliance(df: pd.DataFrame, components: Dict[str, str]) -> List[Dict]:
+def calculate_all_component_compliance(df: pd.DataFrame, components: Dict[str, str], full_df: pd.DataFrame = None) -> List[Dict]:
     """
     Calculate compliance for all components in a category.
 
     Args:
-        df: DataFrame with dock data
+        df: DataFrame with dock data (possibly region-filtered)
         components: Dict mapping display names to column names
+        full_df: Optional unfiltered DataFrame for determining latest versions globally
 
     Returns:
         List of compliance dicts for each component
     """
     results = []
     for name, column in components.items():
-        stats = calculate_component_compliance(df, name, column)
+        stats = calculate_component_compliance(df, name, column, full_df=full_df)
         results.append(stats)
     return results
 
 
-def calculate_fleet_compliance(df: pd.DataFrame) -> Tuple[int, float]:
+def calculate_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = None) -> Tuple[int, float]:
     """
     Calculate overall fleet compliance (% of docks with ALL components on latest).
 
     Args:
-        df: DataFrame with dock data
+        df: DataFrame with dock data (possibly region-filtered)
+        full_df: Optional unfiltered DataFrame for determining latest versions globally
 
     Returns:
         Tuple of (compliant_count, compliance_percentage)
@@ -191,12 +196,13 @@ def calculate_fleet_compliance(df: pd.DataFrame) -> Tuple[int, float]:
         return 0, 0.0
 
     all_components = {**GREENGRASS_COMPONENTS, **DOCK_IMAGE_COMPONENTS}
+    version_source = full_df if full_df is not None else df
 
-    # Get latest versions for each component
+    # Get latest versions for each component from the full dataset
     latest_versions = {}
     for name, column in all_components.items():
-        if column in df.columns:
-            versions = df[column].dropna().tolist()
+        if column in version_source.columns:
+            versions = version_source[column].dropna().tolist()
             versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
             latest_prod = get_latest_version(versions, "production")
             latest_beta = get_latest_version(versions, "beta")
