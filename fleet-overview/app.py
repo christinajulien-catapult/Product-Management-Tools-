@@ -401,7 +401,8 @@ def main():
             # PDF Report button
             pdf_bytes = generate_pdf_report(
                 len(filtered_df), active_count, fleet_compliance, len(outdated_docks),
-                greengrass_compliance, dock_image_compliance, selected_region
+                greengrass_compliance, dock_image_compliance, selected_region,
+                df=filtered_df
             )
             st.download_button(
                 label="PDF Report",

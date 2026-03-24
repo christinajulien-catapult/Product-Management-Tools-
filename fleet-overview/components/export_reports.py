@@ -1,7 +1,47 @@
 import streamlit as st
+import pandas as pd
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 import io
+
+from utils.version_utils import parse_semver, get_latest_version, detect_version_type, get_display_version
+from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS
+
+
+def _get_outdated_docks_for_pdf(df: pd.DataFrame, component_name: str, component_map: Dict[str, str]) -> pd.DataFrame:
+    """Get outdated docks for a component, returning customer/serial/version info."""
+    column = component_map.get(component_name)
+    if not column or column not in df.columns:
+        return pd.DataFrame()
+
+    versions = df[column].dropna().tolist()
+    versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
+    latest_production = get_latest_version(versions, "production")
+    latest_prod_semver = parse_semver(latest_production) if latest_production else None
+
+    outdated_rows = []
+    for idx, row in df.iterrows():
+        version = row.get(column, '')
+        if not version or pd.isna(version) or str(version).strip() == '':
+            outdated_rows.append(idx)
+            continue
+        if detect_version_type(str(version)) == "beta":
+            continue
+        v_semver = parse_semver(version)
+        if not v_semver:
+            outdated_rows.append(idx)
+            continue
+        if latest_prod_semver and v_semver < latest_prod_semver:
+            outdated_rows.append(idx)
+
+    if not outdated_rows:
+        return pd.DataFrame()
+
+    result = df.loc[outdated_rows][['serial', 'customer_name', 'customer_id']].copy()
+    result['version'] = df.loc[outdated_rows, column].apply(
+        lambda v: get_display_version(str(v)) if pd.notna(v) and str(v).strip() else 'N/A'
+    )
+    return result.sort_values('customer_name', na_position='last')
 
 
 def generate_pdf_report(
@@ -11,7 +51,8 @@ def generate_pdf_report(
     outdated_count: int,
     greengrass_components: List[Dict],
     dock_image_components: List[Dict],
-    selected_region: str = "All"
+    selected_region: str = "All",
+    df: Optional[pd.DataFrame] = None
 ) -> bytes:
     """Generate a PDF report of fleet stats."""
     from fpdf import FPDF
@@ -150,6 +191,98 @@ def generate_pdf_report(
         pdf.cell(30, 7, comp['latest_beta'] if comp['latest_beta'] else "-", border=1, align='C')
         pdf.set_text_color(51, 65, 85)
         pdf.ln()
+
+    # Docks Needing Updates - detailed customer/serial breakdown
+    if df is not None and len(df) > 0:
+        all_component_maps = [
+            ("Greengrass", GREENGRASS_COMPONENTS, greengrass_components),
+            ("Dock Image", DOCK_IMAGE_COMPONENTS, dock_image_components),
+        ]
+
+        has_any_outdated = False
+        for section_name, component_map, comp_stats in all_component_maps:
+            for comp in comp_stats:
+                if comp['outdated_count'] > 0:
+                    has_any_outdated = True
+                    break
+
+        if has_any_outdated:
+            pdf.add_page()
+            pdf.set_font('Helvetica', 'B', 16)
+            pdf.set_text_color(30, 41, 59)
+            pdf.cell(0, 10, 'Docks Needing Updates', ln=True)
+            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+            pdf.ln(5)
+
+            pdf.set_font('Helvetica', '', 10)
+            pdf.set_text_color(100, 116, 139)
+            pdf.cell(0, 7, 'Customers and docks with outdated component versions, grouped by component.', ln=True)
+            pdf.ln(5)
+
+            for section_name, component_map, comp_stats in all_component_maps:
+                for comp in comp_stats:
+                    if comp['outdated_count'] == 0:
+                        continue
+
+                    outdated_df = _get_outdated_docks_for_pdf(df, comp['name'], component_map)
+                    if outdated_df.empty:
+                        continue
+
+                    # Check if we need a new page (leave room for header + a few rows)
+                    if pdf.get_y() > 240:
+                        pdf.add_page()
+
+                    # Component sub-header
+                    pdf.set_font('Helvetica', 'B', 12)
+                    pdf.set_text_color(30, 41, 59)
+                    pdf.cell(0, 9, f"{comp['name']}  -  {comp['outdated_count']} outdated  (latest: {comp['latest_production']})", ln=True)
+
+                    # Table header
+                    pdf.set_font('Helvetica', 'B', 9)
+                    pdf.set_fill_color(241, 245, 249)
+                    pdf.set_text_color(51, 65, 85)
+                    pdf.cell(50, 7, 'Customer', border=1, fill=True)
+                    pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                    pdf.cell(45, 7, 'Serial', border=1, fill=True)
+                    pdf.cell(40, 7, 'Current Version', border=1, fill=True, align='C')
+                    pdf.ln()
+
+                    # Table rows
+                    pdf.set_font('Helvetica', '', 8)
+                    pdf.set_text_color(51, 65, 85)
+                    for _, row in outdated_df.iterrows():
+                        if pdf.get_y() > 270:
+                            pdf.add_page()
+                            # Re-print header on new page
+                            pdf.set_font('Helvetica', 'B', 12)
+                            pdf.set_text_color(30, 41, 59)
+                            pdf.cell(0, 9, f"{comp['name']} (continued)", ln=True)
+                            pdf.set_font('Helvetica', 'B', 9)
+                            pdf.set_fill_color(241, 245, 249)
+                            pdf.set_text_color(51, 65, 85)
+                            pdf.cell(50, 7, 'Customer', border=1, fill=True)
+                            pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                            pdf.cell(45, 7, 'Serial', border=1, fill=True)
+                            pdf.cell(40, 7, 'Current Version', border=1, fill=True, align='C')
+                            pdf.ln()
+                            pdf.set_font('Helvetica', '', 8)
+                            pdf.set_text_color(51, 65, 85)
+
+                        customer = str(row.get('customer_name', '—')) if pd.notna(row.get('customer_name')) and str(row.get('customer_name', '')).strip() else '—'
+                        customer_id = str(row.get('customer_id', '—')) if pd.notna(row.get('customer_id')) and str(row.get('customer_id', '')).strip() else '—'
+                        serial = str(row.get('serial', '—')) if pd.notna(row.get('serial')) else '—'
+                        version = str(row.get('version', '—'))
+
+                        # Truncate long strings to fit cells
+                        pdf.cell(50, 6, customer[:30], border=1)
+                        pdf.cell(30, 6, customer_id[:18], border=1, align='C')
+                        pdf.cell(45, 6, serial[:28], border=1)
+                        pdf.set_text_color(239, 68, 68)
+                        pdf.cell(40, 6, version[:24], border=1, align='C')
+                        pdf.set_text_color(51, 65, 85)
+                        pdf.ln()
+
+                    pdf.ln(6)
 
     return bytes(pdf.output())
 
