@@ -154,10 +154,10 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
             outdated_rows.append(idx)
             continue
 
-        # For devices: beta/alpha below latest production are outdated
+        # For devices: beta/alpha at or below latest production are outdated
         if v_type in ("beta", "alpha"):
             if table_id == "devices":
-                if latest_prod_semver and v_semver < latest_prod_semver:
+                if not latest_prod_semver or v_semver <= latest_prod_semver:
                     outdated_rows.append(idx)
             continue
 
@@ -177,13 +177,27 @@ def get_beta_docks_for_component(df: pd.DataFrame, component_name: str, table_id
     if not column or column not in df.columns:
         return pd.DataFrame()
 
+    # For devices, determine latest prod to filter out old betas
+    latest_prod_semver = None
+    if table_id == "devices":
+        versions = df[column].dropna().tolist()
+        versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
+        latest_production = get_latest_version_by_adoption(versions, "production")
+        latest_prod_semver = parse_semver(latest_production) if latest_production else None
+
     beta_rows = []
     for idx, row in df.iterrows():
         version = row.get(column, '')
         if not version or pd.isna(version) or str(version).strip() == '':
             continue
-        if detect_version_type(str(version)) == "beta":
-            beta_rows.append(idx)
+        if detect_version_type(str(version)) in ("beta", "alpha"):
+            # For devices: only betas strictly above latest production count as beta
+            if table_id == "devices" and latest_prod_semver:
+                v_semver = parse_semver(version)
+                if v_semver and v_semver > latest_prod_semver:
+                    beta_rows.append(idx)
+            else:
+                beta_rows.append(idx)
 
     return df.loc[beta_rows] if beta_rows else pd.DataFrame()
 
