@@ -5,6 +5,17 @@ from typing import List, Dict, Optional
 
 from utils.version_utils import parse_semver, get_latest_version, detect_version_type
 from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS
+from utils.device_metrics import DEVICE_COMPONENTS
+
+
+def _get_component_map(table_id: str):
+    """Get the component map for a given table_id."""
+    if table_id == "greengrass":
+        return GREENGRASS_COMPONENTS
+    elif table_id == "devices":
+        return DEVICE_COMPONENTS
+    else:
+        return DOCK_IMAGE_COMPONENTS
 
 
 def get_compliance_color(percentage: float) -> str:
@@ -110,7 +121,7 @@ def create_distribution_bar(production_pct: float, beta_pct: float) -> go.Figure
 
 def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, table_id: str) -> pd.DataFrame:
     """Get docks that have an outdated version of a specific component."""
-    column_map = GREENGRASS_COMPONENTS if table_id == "greengrass" else DOCK_IMAGE_COMPONENTS
+    column_map = _get_component_map(table_id)
     column = column_map.get(component_name)
     if not column or column not in df.columns:
         return pd.DataFrame()
@@ -153,7 +164,7 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
 
 def get_beta_docks_for_component(df: pd.DataFrame, component_name: str, table_id: str) -> pd.DataFrame:
     """Get docks that are on a beta version of a specific component."""
-    column_map = GREENGRASS_COMPONENTS if table_id == "greengrass" else DOCK_IMAGE_COMPONENTS
+    column_map = _get_component_map(table_id)
     column = column_map.get(component_name)
     if not column or column not in df.columns:
         return pd.DataFrame()
@@ -393,7 +404,7 @@ def render_component_table(
         if df is not None and outdated_count > 0 and st.session_state.get(expand_key, False):
             outdated_df = get_outdated_docks_for_component(df, comp['name'], table_id)
             if len(outdated_df) > 0:
-                column_map = GREENGRASS_COMPONENTS if table_id == "greengrass" else DOCK_IMAGE_COMPONENTS
+                column_map = _get_component_map(table_id)
                 column = column_map.get(comp['name'], '')
                 st.markdown(
                     f"<div style='background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 8px 12px; margin: 4px 0 8px 0; border-radius: 0 4px 4px 0;'><span style='color: #fca5a5; font-size: 14px; font-family: Montserrat, sans-serif;'>Outdated docks for {comp['name']} ({len(outdated_df)})</span></div>",
@@ -405,7 +416,7 @@ def render_component_table(
         if df is not None and beta_count > 0 and st.session_state.get(beta_expand_key, False):
             beta_df = get_beta_docks_for_component(df, comp['name'], table_id)
             if len(beta_df) > 0:
-                column_map = GREENGRASS_COMPONENTS if table_id == "greengrass" else DOCK_IMAGE_COMPONENTS
+                column_map = _get_component_map(table_id)
                 column = column_map.get(comp['name'], '')
                 st.markdown(
                     f"<div style='background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 4px 0 8px 0; border-radius: 0 4px 4px 0;'><span style='color: #93c5fd; font-size: 14px; font-family: Montserrat, sans-serif;'>Beta docks for {comp['name']} ({len(beta_df)})</span></div>",

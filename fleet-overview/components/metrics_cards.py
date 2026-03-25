@@ -18,18 +18,22 @@ def render_metrics_cards(
     fleet_compliance: float,
     outdated_count: int,
     selected_region: str = "All",
-    regional_counts: Optional[Dict[str, int]] = None
+    regional_counts: Optional[Dict[str, int]] = None,
+    entity_label: str = "Docks",
+    compliance_subtitle: str = "All components on latest"
 ):
     """
     Render the top metrics cards.
 
     Args:
-        total_docks: Total number of docks
-        active_docks: Number of active docks (seen in last 14 days)
+        total_docks: Total number of docks/devices
+        active_docks: Number of active docks/devices (seen in last 14 days)
         fleet_compliance: Fleet compliance percentage
-        outdated_count: Number of docks needing updates
+        outdated_count: Number of docks/devices needing updates
         selected_region: Currently selected region for display
         regional_counts: Dict of region -> count (e.g., {'AU': 100, 'EU': 50, 'US': 75})
+        entity_label: Display label - "Docks" or "Devices"
+        compliance_subtitle: Subtitle for compliance card
     """
     col1, col2, col3, col4 = st.columns(4)
 
@@ -61,7 +65,7 @@ def render_metrics_cards(
             f"""
             <div style="{card_style}">
                 <p style="color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; font-family: 'Montserrat', sans-serif; text-align: center;">
-                    Total Docks
+                    Total {entity_label}
                 </p>
                 <p style="color: #f1f5f9; font-size: 36px; font-weight: 700; margin: 8px 0; font-family: 'Montserrat', sans-serif; text-align: center;">
                     {total_docks:,}
@@ -80,7 +84,7 @@ def render_metrics_cards(
             f"""
             <div style="{card_style}">
                 <p style="color: #94a3b8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; font-family: 'Montserrat', sans-serif; text-align: center;">
-                    Active Docks
+                    Active {entity_label}
                 </p>
                 <p style="color: #f1f5f9; font-size: 36px; font-weight: 700; margin: 8px 0; font-family: 'Montserrat', sans-serif; text-align: center;">
                     {active_docks:,}
@@ -105,7 +109,7 @@ def render_metrics_cards(
                     {fleet_compliance}%
                 </p>
                 <p style="color: #64748b; font-size: 11px; margin: 0; font-family: 'Montserrat', sans-serif; text-align: center;">
-                    All components on latest
+                    {compliance_subtitle}
                 </p>
             </div>
             """,
@@ -124,7 +128,7 @@ def render_metrics_cards(
                         All Good!
                     </p>
                     <p style="color: #22c55e; font-size: 11px; margin: 0; font-family: 'Montserrat', sans-serif; text-align: center;">
-                        No docks need updates
+                        No {entity_label.lower()} need updates
                     </p>
                 </div>
                 """,
@@ -141,7 +145,7 @@ def render_metrics_cards(
                         {outdated_count:,}
                     </p>
                     <p style="color: #64748b; font-size: 11px; margin: 0; font-family: 'Montserrat', sans-serif; text-align: center;">
-                        Docks with outdated components
+                        {entity_label} needing updates
                     </p>
                 </div>
                 """,
