@@ -30,6 +30,9 @@ EXCLUDED_CUSTOMERS = {
     'internal test',
     'firmware_platform',
     'cmoran_AFL',
+    'Alex Lowthorpe',
+    'Joel_VH_US',
+    'JohnVector8',
 }
 
 
