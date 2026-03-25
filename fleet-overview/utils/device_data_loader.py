@@ -26,6 +26,8 @@ EXCLUDED_CUSTOMERS = {
     'Vector 8 Beta NAM',
     'John Vector 8',
     'Josh Beta',
+    'Julien_OF',
+    'internal test',
 }
 
 

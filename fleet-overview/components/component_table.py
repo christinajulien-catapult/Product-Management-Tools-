@@ -148,14 +148,17 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
             outdated_rows.append(idx)
             continue
 
-        # Beta/alpha versions are not outdated
-        if detect_version_type(str(version)) in ("beta", "alpha"):
-            continue
-
+        v_type = detect_version_type(str(version))
         v_semver = parse_semver(version)
         if not v_semver:
-            # Unparseable versions count as outdated
             outdated_rows.append(idx)
+            continue
+
+        # For devices: beta/alpha below latest production are outdated
+        if v_type in ("beta", "alpha"):
+            if table_id == "devices":
+                if latest_prod_semver and v_semver < latest_prod_semver:
+                    outdated_rows.append(idx)
             continue
 
         is_outdated = True
