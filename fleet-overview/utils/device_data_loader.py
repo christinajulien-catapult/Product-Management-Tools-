@@ -28,6 +28,7 @@ EXCLUDED_CUSTOMERS = {
     'Josh Beta',
     'Julien_OF',
     'internal test',
+    'firmware_platform',
 }
 
 
