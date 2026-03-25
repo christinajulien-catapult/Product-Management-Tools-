@@ -29,6 +29,7 @@ EXCLUDED_CUSTOMERS = {
     'Julien_OF',
     'internal test',
     'firmware_platform',
+    'cmoran_AFL',
 }
 
 
