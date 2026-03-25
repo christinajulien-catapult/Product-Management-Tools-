@@ -17,6 +17,12 @@ EXCLUDED_CUSTOMERS = {
     'Mike Vector 8',
     'VikasL79',
     'SanghyukDemo',
+    'Alex Lowthorpe Cricket ECB',
+    'icehockey_shifts',
+    'VikasEUL5',
+    'Amine Azzouzi Pro',
+    'Laura Davies Cricket',
+    'Gordon',
 }
 
 
