@@ -633,4 +633,84 @@ def generate_device_pdf_report(
 
                 pdf.ln(6)
 
+            # Flagged version section: 0.3.4+d8bbe0d5
+            flagged_version = '0.3.4+d8bbe0d5'
+            flagged_df = df[df[column] == flagged_version]
+            if not flagged_df.empty:
+                pdf.add_page()
+                pdf.set_font('Helvetica', 'B', 16)
+                pdf.set_text_color(239, 68, 68)
+                pdf.cell(0, 10, f'FLAGGED: Devices on {get_display_version(flagged_version)}', ln=True)
+                pdf.set_text_color(30, 41, 59)
+                pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+                pdf.ln(5)
+
+                pdf.set_font('Helvetica', '', 10)
+                pdf.set_text_color(100, 116, 139)
+                pdf.cell(0, 7, f'{len(flagged_df)} devices still on version {flagged_version} - requires immediate attention.', ln=True)
+                pdf.ln(5)
+
+                flagged_regions = sorted(flagged_df['region'].unique())
+                for region in flagged_regions:
+                    region_flagged = flagged_df[flagged_df['region'] == region]
+                    if region_flagged.empty:
+                        continue
+
+                    customer_groups = region_flagged.groupby(['customer_name', 'customer_id']).agg(
+                        device_count=('serial', 'count'),
+                        serials=('serial', lambda x: ', '.join(x.astype(str).head(10))),
+                    ).reset_index().sort_values('device_count', ascending=False)
+
+                    if pdf.get_y() > 240:
+                        pdf.add_page()
+
+                    pdf.set_font('Helvetica', 'B', 14)
+                    pdf.set_text_color(30, 41, 59)
+                    pdf.cell(0, 10, f"{region}  ({len(region_flagged)} devices, {len(customer_groups)} customers)", ln=True)
+
+                    pdf.set_font('Helvetica', 'B', 9)
+                    pdf.set_fill_color(254, 226, 226)
+                    pdf.set_text_color(51, 65, 85)
+                    pdf.cell(55, 7, 'Customer', border=1, fill=True)
+                    pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                    pdf.cell(20, 7, 'Devices', border=1, fill=True, align='C')
+                    pdf.cell(85, 7, 'Serials', border=1, fill=True)
+                    pdf.ln()
+
+                    pdf.set_font('Helvetica', '', 8)
+                    pdf.set_text_color(51, 65, 85)
+                    for _, row in customer_groups.iterrows():
+                        if pdf.get_y() > 270:
+                            pdf.add_page()
+                            pdf.set_font('Helvetica', 'B', 14)
+                            pdf.set_text_color(30, 41, 59)
+                            pdf.cell(0, 10, f"{region} (continued)", ln=True)
+                            pdf.set_font('Helvetica', 'B', 9)
+                            pdf.set_fill_color(254, 226, 226)
+                            pdf.set_text_color(51, 65, 85)
+                            pdf.cell(55, 7, 'Customer', border=1, fill=True)
+                            pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                            pdf.cell(20, 7, 'Devices', border=1, fill=True, align='C')
+                            pdf.cell(85, 7, 'Serials', border=1, fill=True)
+                            pdf.ln()
+                            pdf.set_font('Helvetica', '', 8)
+                            pdf.set_text_color(51, 65, 85)
+
+                        customer = str(row['customer_name']) if row['customer_name'] else '-'
+                        if not customer.strip():
+                            customer = '-'
+                        cid = str(row['customer_id']) if row['customer_id'] else '-'
+                        count = str(row['device_count'])
+                        serials = str(row['serials'])
+
+                        pdf.cell(55, 6, customer[:32], border=1)
+                        pdf.cell(30, 6, cid[:18], border=1, align='C')
+                        pdf.set_text_color(239, 68, 68)
+                        pdf.cell(20, 6, count, border=1, align='C')
+                        pdf.set_text_color(51, 65, 85)
+                        pdf.cell(85, 6, serials[:52], border=1)
+                        pdf.ln()
+
+                    pdf.ln(6)
+
     return bytes(pdf.output())
