@@ -3,6 +3,23 @@ import pandas as pd
 from datetime import datetime
 
 
+# Internal/test/demo accounts to exclude from fleet reporting
+EXCLUDED_CUSTOMERS = {
+    'Mike Vector 8 2',
+    'League IoT Dev',
+    'Vector 8 Beta',
+    'Joel_Vector_Hybrid',
+    'APAC_Demo17',
+    'PaulB5',
+    'BhagyaGopalan',
+    'Khidhir_stable',
+    'Japan Vector 8',
+    'Mike Vector 8',
+    'VikasL79',
+    'SanghyukDemo',
+}
+
+
 def load_device_json(file_buffer) -> pd.DataFrame:
     """
     Load device/tag data from a JSON file and flatten into a DataFrame.
@@ -11,6 +28,7 @@ def load_device_json(file_buffer) -> pd.DataFrame:
     region, tags: [ { serial, model, fw_version via latest_telemetry, ... } ] } ] }
 
     Returns a flat DataFrame with one row per device.
+    Internal/test accounts in EXCLUDED_CUSTOMERS are filtered out.
     """
     if hasattr(file_buffer, 'read'):
         raw = file_buffer.read()
@@ -61,5 +79,9 @@ def load_device_json(file_buffer) -> pd.DataFrame:
     for col in ['serial', 'customer_name', 'customer_id', 'region', 'model', 'generation', 'fw_version']:
         if col in df.columns:
             df[col] = df[col].fillna('')
+
+    # Filter out internal/test/demo accounts
+    if 'customer_name' in df.columns:
+        df = df[~df['customer_name'].isin(EXCLUDED_CUSTOMERS)].reset_index(drop=True)
 
     return df
