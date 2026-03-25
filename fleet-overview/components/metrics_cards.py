@@ -1,5 +1,6 @@
 import streamlit as st
 from typing import Dict, Optional
+# Force redeploy - metrics cards now support entity_label and compliance_subtitle params
 
 
 def get_compliance_color(percentage: float) -> str:
