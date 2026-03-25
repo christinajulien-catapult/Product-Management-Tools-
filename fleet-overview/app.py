@@ -16,11 +16,12 @@ from utils.device_data_loader import load_device_json
 from utils.device_metrics import (
     DEVICE_COMPONENTS,
     calculate_device_fleet_compliance,
+    calculate_all_device_compliance,
     get_devices_needing_update,
 )
 from components.metrics_cards import render_metrics_cards
 from components.component_table import render_component_table
-from components.export_reports import render_export_buttons, generate_pdf_report, generate_slack_summary
+from components.export_reports import render_export_buttons, generate_pdf_report, generate_slack_summary, generate_device_pdf_report
 
 
 # Page config - no sidebar
@@ -811,16 +812,14 @@ def render_device_dashboard():
             regional_counts[region] = len(df[df['region'] == region])
 
     # Calculate firmware compliance using the shared function
-    fw_compliance = calculate_all_component_compliance(
-        filtered_df, DEVICE_COMPONENTS, full_df=df
-    )
+    fw_compliance = calculate_all_device_compliance(filtered_df, full_df=df)
 
     # Top spacing
     st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
     st.markdown(DASHBOARD_HEADER_CSS, unsafe_allow_html=True)
 
     # Header row
-    col1, col2, col3, col4 = st.columns([3.2, 0.7, 0.8, 1.3])
+    col1, col2, col3, col4, col5 = st.columns([2.8, 0.7, 0.8, 1.3, 1])
 
     with col1:
         st.markdown(
@@ -850,6 +849,19 @@ def render_device_dashboard():
             clear_data_state()
             st.rerun()
 
+    with col5:
+        pdf_bytes = generate_device_pdf_report(
+            len(filtered_df), active_count, fleet_compliance, len(outdated_devices),
+            fw_compliance, selected_region, df=filtered_df
+        )
+        st.download_button(
+            label="PDF Report",
+            data=pdf_bytes,
+            file_name=f"device_report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+
     st.markdown("<br>", unsafe_allow_html=True)
 
     render_metrics_cards(
@@ -870,7 +882,8 @@ def render_device_dashboard():
         fw_compliance,
         len(filtered_df),
         "devices",
-        filtered_df
+        filtered_df,
+        entity_label="devices"
     )
 
     st.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)

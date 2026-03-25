@@ -95,6 +95,33 @@ def get_latest_version(versions: List[str], version_type: str = "production") ->
     return sorted_versions[0] if sorted_versions else None
 
 
+def get_latest_version_by_adoption(versions: List[str], version_type: str = "production") -> Optional[str]:
+    """
+    Find the latest version by adoption count (most deployed) rather than semver.
+
+    This is useful for device firmware where internal/test builds may have
+    higher semver numbers but very low deployment counts. The actual production
+    release is the one deployed to the most devices.
+
+    Args:
+        versions: List of version strings (one per device, so duplicates represent adoption)
+        version_type: "production" or "beta"
+
+    Returns:
+        The most widely deployed version string of the given type, or None
+    """
+    from collections import Counter
+
+    filtered = [v for v in versions if v and detect_version_type(v) == version_type]
+    if not filtered:
+        return None
+
+    counts = Counter(filtered)
+    # Return the version with the highest count
+    most_common = counts.most_common(1)[0][0]
+    return most_common
+
+
 def is_on_latest(current_version: str, latest_production: str, latest_beta: str = None) -> bool:
     """
     Check if current version is on latest (production or beta).

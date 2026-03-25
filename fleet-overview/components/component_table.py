@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from typing import List, Dict, Optional
 
-from utils.version_utils import parse_semver, get_latest_version, detect_version_type
+from utils.version_utils import parse_semver, get_latest_version, get_latest_version_by_adoption, detect_version_type
 from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS
 from utils.device_metrics import DEVICE_COMPONENTS
 
@@ -128,7 +128,12 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
 
     versions = df[column].dropna().tolist()
     versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
-    latest_production = get_latest_version(versions, "production")
+
+    # Use adoption-based detection for devices, semver for docks
+    if table_id == "devices":
+        latest_production = get_latest_version_by_adoption(versions, "production")
+    else:
+        latest_production = get_latest_version(versions, "production")
     latest_beta = get_latest_version(versions, "beta")
 
     latest_prod_semver = parse_semver(latest_production) if latest_production else None
@@ -143,8 +148,8 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
             outdated_rows.append(idx)
             continue
 
-        # Beta versions are not outdated
-        if detect_version_type(str(version)) == "beta":
+        # Beta/alpha versions are not outdated
+        if detect_version_type(str(version)) in ("beta", "alpha"):
             continue
 
         v_semver = parse_semver(version)
@@ -296,9 +301,10 @@ def render_component_table(
     components: List[Dict],
     total_docks: int,
     table_id: str,
-    df: Optional[pd.DataFrame] = None
+    df: Optional[pd.DataFrame] = None,
+    entity_label: str = "docks"
 ):
-    """Render a component compliance table with expandable outdated dock views."""
+    """Render a component compliance table with expandable outdated views."""
 
     # Section title with emphasis
     st.markdown(
@@ -352,7 +358,7 @@ def render_component_table(
                 st.button(
                     f"{outdated_pct}% {icon}",
                     key=f"btn_{expand_key}",
-                    help=f"Click to view {outdated_count} outdated docks",
+                    help=f"Click to view {outdated_count} outdated {entity_label}",
                     type="primary",
                     on_click=toggle_state,
                     args=(expand_key,)
@@ -383,7 +389,7 @@ def render_component_table(
                 st.button(
                     f"{beta_pct}% {beta_icon}",
                     key=f"btn_{beta_expand_key}",
-                    help=f"Click to view {beta_count} docks on beta",
+                    help=f"Click to view {beta_count} {entity_label} on beta",
                     type="secondary",
                     on_click=toggle_state,
                     args=(beta_expand_key,)
@@ -407,7 +413,7 @@ def render_component_table(
                 column_map = _get_component_map(table_id)
                 column = column_map.get(comp['name'], '')
                 st.markdown(
-                    f"<div style='background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 8px 12px; margin: 4px 0 8px 0; border-radius: 0 4px 4px 0;'><span style='color: #fca5a5; font-size: 14px; font-family: Montserrat, sans-serif;'>Outdated docks for {comp['name']} ({len(outdated_df)})</span></div>",
+                    f"<div style='background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 8px 12px; margin: 4px 0 8px 0; border-radius: 0 4px 4px 0;'><span style='color: #fca5a5; font-size: 14px; font-family: Montserrat, sans-serif;'>Outdated {entity_label} for {comp['name']} ({len(outdated_df)})</span></div>",
                     unsafe_allow_html=True
                 )
                 render_dock_table(outdated_df, column, 'Current Version')
@@ -419,7 +425,7 @@ def render_component_table(
                 column_map = _get_component_map(table_id)
                 column = column_map.get(comp['name'], '')
                 st.markdown(
-                    f"<div style='background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 4px 0 8px 0; border-radius: 0 4px 4px 0;'><span style='color: #93c5fd; font-size: 14px; font-family: Montserrat, sans-serif;'>Beta docks for {comp['name']} ({len(beta_df)})</span></div>",
+                    f"<div style='background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 8px 12px; margin: 4px 0 8px 0; border-radius: 0 4px 4px 0;'><span style='color: #93c5fd; font-size: 14px; font-family: Montserrat, sans-serif;'>Beta {entity_label} for {comp['name']} ({len(beta_df)})</span></div>",
                     unsafe_allow_html=True
                 )
                 render_dock_table(beta_df, column, 'Beta Version')

@@ -4,8 +4,9 @@ from datetime import datetime
 from typing import List, Dict, Optional
 import io
 
-from utils.version_utils import parse_semver, get_latest_version, detect_version_type, get_display_version
+from utils.version_utils import parse_semver, get_latest_version, get_latest_version_by_adoption, detect_version_type, get_display_version
 from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS
+from utils.device_metrics import DEVICE_COMPONENTS
 
 
 def _get_outdated_docks_for_pdf(df: pd.DataFrame, component_name: str, component_map: Dict[str, str]) -> pd.DataFrame:
@@ -432,3 +433,204 @@ def render_export_buttons(
             if st.button("Done", key="slack_done_btn_full"):
                 st.session_state['show_slack_copy'] = False
                 st.rerun()
+
+
+def generate_device_pdf_report(
+    total_devices: int,
+    active_devices: int,
+    fleet_compliance: float,
+    outdated_count: int,
+    fw_compliance: List[Dict],
+    selected_region: str = "All",
+    df: Optional[pd.DataFrame] = None
+) -> bytes:
+    """Generate a PDF report for device fleet stats with customer breakdown by region."""
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # Title
+    pdf.set_font('Helvetica', 'B', 24)
+    pdf.set_text_color(30, 41, 59)
+    pdf.cell(0, 15, 'Vector Device Fleet Report', ln=True, align='C')
+
+    # Date and Region
+    pdf.set_font('Helvetica', '', 12)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(0, 8, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='C')
+    pdf.cell(0, 8, f"Region: {selected_region}", ln=True, align='C')
+    pdf.ln(10)
+
+    # Summary Metrics
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.set_text_color(30, 41, 59)
+    pdf.cell(0, 10, 'Fleet Summary', ln=True)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+
+    pdf.set_font('Helvetica', '', 12)
+    pdf.set_text_color(51, 65, 85)
+
+    metrics = [
+        ('Total Devices', str(total_devices)),
+        ('Active Devices (14 days)', f"{active_devices} ({round(active_devices/total_devices*100) if total_devices > 0 else 0}%)"),
+        ('Firmware Compliance', f"{fleet_compliance}%"),
+        ('Devices Needing Update', str(outdated_count)),
+    ]
+
+    for label, value in metrics:
+        pdf.cell(80, 8, label + ':', ln=False)
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.cell(0, 8, value, ln=True)
+        pdf.set_font('Helvetica', '', 12)
+
+    pdf.ln(10)
+
+    # Firmware Version Summary
+    if fw_compliance:
+        comp = fw_compliance[0]
+        pdf.set_font('Helvetica', 'B', 16)
+        pdf.set_text_color(30, 41, 59)
+        pdf.cell(0, 10, 'Firmware Version', ln=True)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(5)
+
+        pdf.set_font('Helvetica', '', 12)
+        pdf.set_text_color(51, 65, 85)
+
+        fw_info = [
+            ('Latest Production', comp['latest_production']),
+            ('On Latest', f"{comp['production_percentage']}% ({comp['production_count']} devices)"),
+            ('Outdated', f"{comp['outdated_percentage']}% ({comp['outdated_count']} devices)"),
+        ]
+        if comp['latest_beta']:
+            fw_info.append(('Latest Beta', comp['latest_beta']))
+            fw_info.append(('On Beta/Alpha', f"{comp['beta_percentage']}% ({comp['beta_count']} devices)"))
+
+        for label, value in fw_info:
+            pdf.cell(80, 8, label + ':', ln=False)
+            pdf.set_font('Helvetica', 'B', 12)
+            pdf.cell(0, 8, value, ln=True)
+            pdf.set_font('Helvetica', '', 12)
+
+    # Customers needing updates by region
+    if df is not None and len(df) > 0:
+        column = 'fw_version'
+        versions = df[column].dropna().tolist()
+        versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
+        latest_prod = get_latest_version_by_adoption(versions, "production")
+        latest_prod_semver = parse_semver(latest_prod) if latest_prod else None
+        latest_display = get_display_version(latest_prod) if latest_prod else 'N/A'
+
+        # Find outdated devices
+        outdated_rows = []
+        for idx, row in df.iterrows():
+            version = row.get(column, '')
+            if not version or pd.isna(version) or str(version).strip() == '':
+                outdated_rows.append(idx)
+                continue
+            v_type = detect_version_type(str(version))
+            if v_type in ("beta", "alpha"):
+                continue
+            v_semver = parse_semver(version)
+            if not v_semver:
+                outdated_rows.append(idx)
+                continue
+            if latest_prod_semver and v_semver < latest_prod_semver:
+                outdated_rows.append(idx)
+
+        if outdated_rows:
+            outdated_df = df.loc[outdated_rows].copy()
+            outdated_df['display_version'] = outdated_df[column].apply(
+                lambda v: get_display_version(str(v)) if pd.notna(v) and str(v).strip() else 'N/A'
+            )
+
+            # Group by region
+            regions = sorted(outdated_df['region'].unique())
+
+            pdf.add_page()
+            pdf.set_font('Helvetica', 'B', 16)
+            pdf.set_text_color(30, 41, 59)
+            pdf.cell(0, 10, f'Devices Needing Update to {latest_display}', ln=True)
+            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+            pdf.ln(5)
+
+            pdf.set_font('Helvetica', '', 10)
+            pdf.set_text_color(100, 116, 139)
+            pdf.cell(0, 7, 'Customers and devices with outdated firmware, grouped by region.', ln=True)
+            pdf.ln(5)
+
+            for region in regions:
+                region_df = outdated_df[outdated_df['region'] == region]
+                if region_df.empty:
+                    continue
+
+                # Aggregate by customer
+                customer_groups = region_df.groupby(['customer_name', 'customer_id']).agg(
+                    device_count=('serial', 'count'),
+                    serials=('serial', lambda x: ', '.join(x.astype(str).head(10))),
+                    versions=('display_version', lambda x: ', '.join(x.unique()))
+                ).reset_index().sort_values('customer_name', na_position='last')
+
+                if pdf.get_y() > 240:
+                    pdf.add_page()
+
+                # Region header
+                pdf.set_font('Helvetica', 'B', 14)
+                pdf.set_text_color(30, 41, 59)
+                pdf.cell(0, 10, f"{region}  ({len(region_df)} devices, {len(customer_groups)} customers)", ln=True)
+
+                # Table header
+                pdf.set_font('Helvetica', 'B', 9)
+                pdf.set_fill_color(241, 245, 249)
+                pdf.set_text_color(51, 65, 85)
+                pdf.cell(45, 7, 'Customer', border=1, fill=True)
+                pdf.cell(25, 7, 'Customer ID', border=1, fill=True, align='C')
+                pdf.cell(15, 7, 'Count', border=1, fill=True, align='C')
+                pdf.cell(35, 7, 'Current Version(s)', border=1, fill=True, align='C')
+                pdf.cell(70, 7, 'Serials', border=1, fill=True)
+                pdf.ln()
+
+                # Table rows
+                pdf.set_font('Helvetica', '', 8)
+                pdf.set_text_color(51, 65, 85)
+                for _, row in customer_groups.iterrows():
+                    if pdf.get_y() > 270:
+                        pdf.add_page()
+                        pdf.set_font('Helvetica', 'B', 14)
+                        pdf.set_text_color(30, 41, 59)
+                        pdf.cell(0, 10, f"{region} (continued)", ln=True)
+                        pdf.set_font('Helvetica', 'B', 9)
+                        pdf.set_fill_color(241, 245, 249)
+                        pdf.set_text_color(51, 65, 85)
+                        pdf.cell(45, 7, 'Customer', border=1, fill=True)
+                        pdf.cell(25, 7, 'Customer ID', border=1, fill=True, align='C')
+                        pdf.cell(15, 7, 'Count', border=1, fill=True, align='C')
+                        pdf.cell(35, 7, 'Current Version(s)', border=1, fill=True, align='C')
+                        pdf.cell(70, 7, 'Serials', border=1, fill=True)
+                        pdf.ln()
+                        pdf.set_font('Helvetica', '', 8)
+                        pdf.set_text_color(51, 65, 85)
+
+                    customer = str(row['customer_name']) if row['customer_name'] else '-'
+                    if not customer.strip():
+                        customer = '-'
+                    cid = str(row['customer_id']) if row['customer_id'] else '-'
+                    count = str(row['device_count'])
+                    vers = str(row['versions'])
+                    serials = str(row['serials'])
+
+                    pdf.cell(45, 6, customer[:26], border=1)
+                    pdf.cell(25, 6, cid[:15], border=1, align='C')
+                    pdf.cell(15, 6, count, border=1, align='C')
+                    pdf.set_text_color(239, 68, 68)
+                    pdf.cell(35, 6, vers[:20], border=1, align='C')
+                    pdf.set_text_color(51, 65, 85)
+                    pdf.cell(70, 6, serials[:42], border=1)
+                    pdf.ln()
+
+                pdf.ln(6)
+
+    return bytes(pdf.output())
