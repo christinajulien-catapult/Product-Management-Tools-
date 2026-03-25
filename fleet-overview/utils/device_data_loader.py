@@ -23,6 +23,9 @@ EXCLUDED_CUSTOMERS = {
     'Amine Azzouzi Pro',
     'Laura Davies Cricket',
     'Gordon',
+    'Vector 8 Beta NAM',
+    'John Vector 8',
+    'Josh Beta',
 }
 
 
