@@ -4,7 +4,7 @@ import pandas as pd
 from typing import List, Dict, Optional
 
 from utils.version_utils import parse_semver, get_latest_version, get_latest_version_by_adoption, detect_version_type
-from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS
+from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS, VERSION_OVERRIDES
 from utils.device_metrics import DEVICE_COMPONENTS
 
 
@@ -126,18 +126,24 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
     if not column or column not in df.columns:
         return pd.DataFrame()
 
-    versions = df[column].dropna().tolist()
-    versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
+    override = VERSION_OVERRIDES.get(column)
 
-    # Use adoption-based detection for devices, semver for docks
-    if table_id == "devices":
-        latest_production = get_latest_version_by_adoption(versions, "production")
+    if override:
+        latest_prod_semver = override['latest_production']
+        latest_beta_semver = override.get('latest_beta')
     else:
-        latest_production = get_latest_version(versions, "production")
-    latest_beta = get_latest_version(versions, "beta")
+        versions = df[column].dropna().tolist()
+        versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
 
-    latest_prod_semver = parse_semver(latest_production) if latest_production else None
-    latest_beta_semver = parse_semver(latest_beta) if latest_beta else None
+        # Use adoption-based detection for devices, semver for docks
+        if table_id == "devices":
+            latest_production = get_latest_version_by_adoption(versions, "production")
+        else:
+            latest_production = get_latest_version(versions, "production")
+        latest_beta = get_latest_version(versions, "beta")
+
+        latest_prod_semver = parse_semver(latest_production) if latest_production else None
+        latest_beta_semver = parse_semver(latest_beta) if latest_beta else None
 
     outdated_rows = []
     for idx, row in df.iterrows():
@@ -148,24 +154,34 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
             outdated_rows.append(idx)
             continue
 
-        v_type = detect_version_type(str(version))
         v_semver = parse_semver(version)
         if not v_semver:
             outdated_rows.append(idx)
             continue
 
-        # For devices: beta/alpha at or below latest production are outdated
-        if v_type in ("beta", "alpha"):
-            if table_id == "devices":
-                if not latest_prod_semver or v_semver <= latest_prod_semver:
-                    outdated_rows.append(idx)
-            continue
+        if override:
+            # With overrides: only exact beta semver match is beta, production must be >= prod semver
+            if latest_beta_semver and v_semver == latest_beta_semver:
+                continue  # This is beta, not outdated
+            elif latest_prod_semver and v_semver >= latest_prod_semver:
+                continue  # On latest production, not outdated
+            else:
+                outdated_rows.append(idx)
+        else:
+            v_type = detect_version_type(str(version))
 
-        is_outdated = True
-        if latest_prod_semver and v_semver >= latest_prod_semver:
-            is_outdated = False
-        if is_outdated:
-            outdated_rows.append(idx)
+            # For devices: beta/alpha at or below latest production are outdated
+            if v_type in ("beta", "alpha"):
+                if table_id == "devices":
+                    if not latest_prod_semver or v_semver <= latest_prod_semver:
+                        outdated_rows.append(idx)
+                continue
+
+            is_outdated = True
+            if latest_prod_semver and v_semver >= latest_prod_semver:
+                is_outdated = False
+            if is_outdated:
+                outdated_rows.append(idx)
 
     return df.loc[outdated_rows] if outdated_rows else pd.DataFrame()
 
@@ -176,6 +192,24 @@ def get_beta_docks_for_component(df: pd.DataFrame, component_name: str, table_id
     column = column_map.get(component_name)
     if not column or column not in df.columns:
         return pd.DataFrame()
+
+    override = VERSION_OVERRIDES.get(column)
+
+    if override:
+        # With overrides: only exact beta semver match counts as beta
+        latest_beta_semver = override.get('latest_beta')
+        if not latest_beta_semver:
+            return pd.DataFrame()
+
+        beta_rows = []
+        for idx, row in df.iterrows():
+            version = row.get(column, '')
+            if not version or pd.isna(version) or str(version).strip() == '':
+                continue
+            v_semver = parse_semver(version)
+            if v_semver and v_semver == latest_beta_semver:
+                beta_rows.append(idx)
+        return df.loc[beta_rows] if beta_rows else pd.DataFrame()
 
     # For devices, determine latest prod to filter out old betas
     latest_prod_semver = None
