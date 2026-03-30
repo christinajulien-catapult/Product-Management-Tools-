@@ -24,6 +24,15 @@ DOCK_IMAGE_COMPONENTS = {
     'APU': 'device_version',
 }
 
+# Manual version overrides for components where auto-detection is wrong.
+# Maps column name -> {latest_production: semver tuple, latest_beta: semver tuple}
+VERSION_OVERRIDES = {
+    'pmu_version': {
+        'latest_production': (1, 0, 4),
+        'latest_beta': (1, 0, 5),
+    },
+}
+
 
 def calculate_active_docks(df: pd.DataFrame, days: int = 14) -> Tuple[pd.DataFrame, int]:
     """
@@ -94,18 +103,27 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
             'total': 0,
         }
 
-    # Use full (unfiltered) dataset to determine latest versions so that
-    # region filtering doesn't change what counts as "latest"
-    version_source = full_df if full_df is not None else df
-    all_versions = version_source[column].dropna().tolist() if column in version_source.columns else []
-    all_versions = [v for v in all_versions if isinstance(v, str) and v.strip() != '']
+    # Check for manual version overrides
+    override = VERSION_OVERRIDES.get(column)
 
-    # Get latest versions from the full dataset
-    latest_production = get_latest_version(all_versions, "production")
-    latest_beta = get_latest_version(all_versions, "beta")
+    if override:
+        latest_prod_semver = override['latest_production']
+        latest_beta_semver = override.get('latest_beta')
+        latest_production = '.'.join(str(x) for x in latest_prod_semver)
+        latest_beta = '.'.join(str(x) for x in latest_beta_semver) if latest_beta_semver else None
+    else:
+        # Use full (unfiltered) dataset to determine latest versions so that
+        # region filtering doesn't change what counts as "latest"
+        version_source = full_df if full_df is not None else df
+        all_versions = version_source[column].dropna().tolist() if column in version_source.columns else []
+        all_versions = [v for v in all_versions if isinstance(v, str) and v.strip() != '']
 
-    latest_prod_semver = parse_semver(latest_production) if latest_production else None
-    latest_beta_semver = parse_semver(latest_beta) if latest_beta else None
+        # Get latest versions from the full dataset
+        latest_production = get_latest_version(all_versions, "production")
+        latest_beta = get_latest_version(all_versions, "beta")
+
+        latest_prod_semver = parse_semver(latest_production) if latest_production else None
+        latest_beta_semver = parse_semver(latest_beta) if latest_beta else None
 
     production_count = 0
     beta_count = 0
@@ -120,7 +138,6 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
             unknown_count += 1
             continue
 
-        v_type = detect_version_type(version)
         v_semver = parse_semver(version)
 
         if not v_semver:
@@ -129,14 +146,24 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
             unknown_count += 1
             continue
 
-        # First check if this is a beta version by type
-        if v_type == "beta":
-            beta_count += 1
-        # Check if on latest production
-        elif latest_prod_semver and v_semver >= latest_prod_semver:
-            production_count += 1
+        if override:
+            # Use override logic: match exact beta semver, then check production
+            if latest_beta_semver and v_semver == latest_beta_semver:
+                beta_count += 1
+            elif latest_prod_semver and v_semver >= latest_prod_semver:
+                production_count += 1
+            else:
+                outdated_count += 1
         else:
-            outdated_count += 1
+            v_type = detect_version_type(version)
+            # First check if this is a beta version by type
+            if v_type == "beta":
+                beta_count += 1
+            # Check if on latest production
+            elif latest_prod_semver and v_semver >= latest_prod_semver:
+                production_count += 1
+            else:
+                outdated_count += 1
 
     # Calculate percentages - ensure non-zero counts never round to 0%,
     # and incomplete counts never round to 100%
@@ -213,7 +240,15 @@ def calculate_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = None) -
     # Get latest versions for each component from the full dataset
     latest_versions = {}
     for name, column in all_components.items():
-        if column in version_source.columns:
+        override = VERSION_OVERRIDES.get(column)
+        if override:
+            prod_sv = override['latest_production']
+            beta_sv = override.get('latest_beta')
+            latest_versions[column] = {
+                'production': '.'.join(str(x) for x in prod_sv),
+                'beta': '.'.join(str(x) for x in beta_sv) if beta_sv else None
+            }
+        elif column in version_source.columns:
             versions = version_source[column].dropna().tolist()
             versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
             latest_prod = get_latest_version(versions, "production")
