@@ -28,7 +28,7 @@ DOCK_IMAGE_COMPONENTS = {
 # Maps column name -> {latest_production: semver tuple, latest_beta: semver tuple}
 VERSION_OVERRIDES = {
     'pmu_version': {
-        'latest_production': (1, 0, 4),
+        'latest_production': (1, 0, 3),
         'latest_beta': (1, 0, 5),
     },
     'device_manager_component_version': {
@@ -151,10 +151,12 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
             continue
 
         if override:
-            # Use override logic: match exact beta semver, then check production
-            if latest_beta_semver and v_semver == latest_beta_semver:
+            # Use override logic: check production first, then beta
+            if latest_prod_semver and v_semver == latest_prod_semver:
+                production_count += 1
+            elif latest_beta_semver and v_semver >= latest_beta_semver:
                 beta_count += 1
-            elif latest_prod_semver and v_semver >= latest_prod_semver:
+            elif latest_prod_semver and v_semver > latest_prod_semver:
                 production_count += 1
             else:
                 outdated_count += 1
