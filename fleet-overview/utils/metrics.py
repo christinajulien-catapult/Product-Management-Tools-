@@ -239,6 +239,9 @@ def calculate_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = None) -
         return 0, 0.0
 
     all_components = {**GREENGRASS_COMPONENTS, **DOCK_IMAGE_COMPONENTS}
+    # Exclude hidden columns from compliance calculation
+    excluded_columns = {'dock_pmu_version', 'dock_image_version'}
+    all_components = {k: v for k, v in all_components.items() if v not in excluded_columns}
     version_source = full_df if full_df is not None else df
 
     # Get latest versions for each component from the full dataset
@@ -289,23 +292,58 @@ def calculate_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = None) -
     return compliant_count, compliance_percentage
 
 
-def get_docks_needing_update(df: pd.DataFrame) -> pd.DataFrame:
+def get_docks_needing_update(df: pd.DataFrame, full_df: pd.DataFrame = None) -> pd.DataFrame:
     """
     Get docks that have at least one component needing an update.
+    Excludes dock_pmu and dock_image from consideration.
 
     Args:
         df: DataFrame with dock data
+        full_df: Optional unfiltered DataFrame for determining latest versions globally
 
     Returns:
         Filtered DataFrame with docks needing updates
     """
-    # Use the components_needs_update column if available
-    if 'components_needs_update' in df.columns:
-        needs_update = df[
-            (df['components_needs_update'].notna()) &
-            (df['components_needs_update'].str.strip() != '')
-        ]
-        return needs_update
+    if len(df) == 0:
+        return pd.DataFrame()
 
-    # Fallback: calculate manually
-    return df[df['components_up_to_date'] == False] if 'components_up_to_date' in df.columns else df
+    all_components = {**GREENGRASS_COMPONENTS, **DOCK_IMAGE_COMPONENTS}
+    excluded_columns = {'dock_pmu_version', 'dock_image_version'}
+    all_components = {k: v for k, v in all_components.items() if v not in excluded_columns}
+    version_source = full_df if full_df is not None else df
+
+    # Get latest versions for each component
+    latest_versions = {}
+    for name, column in all_components.items():
+        override = VERSION_OVERRIDES.get(column)
+        if override:
+            prod_sv = override['latest_production']
+            beta_sv = override.get('latest_beta')
+            latest_versions[column] = {
+                'production': '.'.join(str(x) for x in prod_sv),
+                'beta': '.'.join(str(x) for x in beta_sv) if beta_sv else None
+            }
+        elif column in version_source.columns:
+            versions = version_source[column].dropna().tolist()
+            versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
+            latest_prod = get_latest_version(versions, "production")
+            latest_beta = get_latest_version(versions, "beta")
+            latest_versions[column] = {
+                'production': latest_prod,
+                'beta': latest_beta
+            }
+
+    outdated_rows = []
+    for idx, row in df.iterrows():
+        for name, column in all_components.items():
+            if column not in df.columns:
+                continue
+            version = row.get(column, '')
+            if not version or pd.isna(version) or str(version).strip() == '':
+                continue
+            latest = latest_versions.get(column, {})
+            if not is_on_latest(version, latest.get('production'), latest.get('beta')):
+                outdated_rows.append(idx)
+                break
+
+    return df.loc[outdated_rows] if outdated_rows else pd.DataFrame()
