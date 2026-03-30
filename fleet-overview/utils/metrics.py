@@ -17,8 +17,6 @@ GREENGRASS_COMPONENTS = {
     'Power': 'power_component_version',
     'Raw File Upload': 'raw_file_upload_version',
     'Retriever': 'retriever_version',
-    'Dock PMU': 'dock_pmu_version',
-    'Dock Image': 'dock_image_version',
 }
 
 DOCK_IMAGE_COMPONENTS = {
