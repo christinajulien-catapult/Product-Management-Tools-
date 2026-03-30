@@ -630,7 +630,7 @@ def render_dock_dashboard():
 
     active_df, active_count = calculate_active_docks(filtered_df)
     _, fleet_compliance = calculate_fleet_compliance(filtered_df, full_df=df)
-    outdated_docks = get_docks_needing_update(filtered_df)
+    outdated_docks = get_docks_needing_update(filtered_df, full_df=df)
 
     regional_counts = {}
     if 'region' in df.columns:
