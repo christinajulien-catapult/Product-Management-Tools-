@@ -160,11 +160,13 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
             continue
 
         if override:
-            # With overrides: only exact beta semver match is beta, production must be >= prod semver
-            if latest_beta_semver and v_semver == latest_beta_semver:
-                continue  # This is beta, not outdated
-            elif latest_prod_semver and v_semver >= latest_prod_semver:
-                continue  # On latest production, not outdated
+            # With overrides: exact production match or beta match are not outdated
+            if latest_prod_semver and v_semver == latest_prod_semver:
+                continue  # On latest production
+            elif latest_beta_semver and v_semver >= latest_beta_semver:
+                continue  # On beta
+            elif latest_prod_semver and v_semver > latest_prod_semver:
+                continue  # Above production
             else:
                 outdated_rows.append(idx)
         else:
@@ -196,8 +198,9 @@ def get_beta_docks_for_component(df: pd.DataFrame, component_name: str, table_id
     override = VERSION_OVERRIDES.get(column)
 
     if override:
-        # With overrides: only exact beta semver match counts as beta
+        # With overrides: beta is anything >= beta semver that isn't exact production
         latest_beta_semver = override.get('latest_beta')
+        latest_prod_semver = override.get('latest_production')
         if not latest_beta_semver:
             return pd.DataFrame()
 
@@ -207,7 +210,13 @@ def get_beta_docks_for_component(df: pd.DataFrame, component_name: str, table_id
             if not version or pd.isna(version) or str(version).strip() == '':
                 continue
             v_semver = parse_semver(version)
-            if v_semver and v_semver == latest_beta_semver:
+            if not v_semver:
+                continue
+            # Exact production match is not beta
+            if latest_prod_semver and v_semver == latest_prod_semver:
+                continue
+            # At or above beta semver is beta
+            if v_semver >= latest_beta_semver:
                 beta_rows.append(idx)
         return df.loc[beta_rows] if beta_rows else pd.DataFrame()
 
