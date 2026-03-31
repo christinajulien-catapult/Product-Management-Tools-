@@ -552,11 +552,14 @@ def generate_device_pdf_report(
                 outdated_rows.append(idx)
                 continue
             v_type = detect_version_type(str(version))
-            if v_type in ("beta", "alpha"):
-                continue
             v_semver = parse_semver(version)
             if not v_semver:
                 outdated_rows.append(idx)
+                continue
+            # Beta/alpha at or below latest production are outdated
+            if v_type in ("beta", "alpha"):
+                if latest_prod_semver and v_semver <= latest_prod_semver:
+                    outdated_rows.append(idx)
                 continue
             if latest_prod_semver and v_semver < latest_prod_semver:
                 outdated_rows.append(idx)
