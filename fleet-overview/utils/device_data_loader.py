@@ -33,6 +33,7 @@ EXCLUDED_CUSTOMERS = {
     'Alex Lowthorpe',
     'Joel_VH_US',
     'JohnVector8',
+    'charlotte',
 }
 
 
