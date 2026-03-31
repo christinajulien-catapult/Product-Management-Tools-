@@ -172,10 +172,10 @@ def get_outdated_docks_for_component(df: pd.DataFrame, component_name: str, tabl
         else:
             v_type = detect_version_type(str(version))
 
-            # For devices: beta/alpha at or below latest production are outdated
+            # For devices: beta/alpha below latest production are outdated
             if v_type in ("beta", "alpha"):
                 if table_id == "devices":
-                    if not latest_prod_semver or v_semver <= latest_prod_semver:
+                    if not latest_prod_semver or v_semver < latest_prod_semver:
                         outdated_rows.append(idx)
                 continue
 
@@ -234,10 +234,10 @@ def get_beta_docks_for_component(df: pd.DataFrame, component_name: str, table_id
         if not version or pd.isna(version) or str(version).strip() == '':
             continue
         if detect_version_type(str(version)) in ("beta", "alpha"):
-            # For devices: only betas strictly above latest production count as beta
+            # For devices: betas at or above latest production count as beta
             if table_id == "devices" and latest_prod_semver:
                 v_semver = parse_semver(version)
-                if v_semver and v_semver > latest_prod_semver:
+                if v_semver and v_semver >= latest_prod_semver:
                     beta_rows.append(idx)
             else:
                 beta_rows.append(idx)
