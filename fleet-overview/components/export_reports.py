@@ -556,9 +556,9 @@ def generate_device_pdf_report(
             if not v_semver:
                 outdated_rows.append(idx)
                 continue
-            # Beta/alpha at or below latest production are outdated
+            # Beta/alpha below latest production are outdated; at or above are up to date
             if v_type in ("beta", "alpha"):
-                if latest_prod_semver and v_semver <= latest_prod_semver:
+                if latest_prod_semver and v_semver < latest_prod_semver:
                     outdated_rows.append(idx)
                 continue
             if latest_prod_semver and v_semver < latest_prod_semver:
