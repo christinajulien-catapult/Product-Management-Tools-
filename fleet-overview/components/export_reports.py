@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 import io
 
 from utils.version_utils import parse_semver, get_latest_version, get_latest_version_by_adoption, detect_version_type, get_display_version
-from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS
+from utils.metrics import GREENGRASS_COMPONENTS, DOCK_IMAGE_COMPONENTS, VERSION_OVERRIDES
 from utils.device_metrics import DEVICE_COMPONENTS
 
 
@@ -15,10 +15,17 @@ def _get_outdated_docks_for_pdf(df: pd.DataFrame, component_name: str, component
     if not column or column not in df.columns:
         return pd.DataFrame()
 
-    versions = df[column].dropna().tolist()
-    versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
-    latest_production = get_latest_version(versions, "production")
-    latest_prod_semver = parse_semver(latest_production) if latest_production else None
+    override = VERSION_OVERRIDES.get(column)
+
+    if override:
+        latest_prod_semver = override['latest_production']
+        latest_beta_semver = override.get('latest_beta')
+    else:
+        versions = df[column].dropna().tolist()
+        versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
+        latest_production = get_latest_version(versions, "production")
+        latest_prod_semver = parse_semver(latest_production) if latest_production else None
+        latest_beta_semver = None
 
     outdated_rows = []
     for idx, row in df.iterrows():
@@ -26,14 +33,27 @@ def _get_outdated_docks_for_pdf(df: pd.DataFrame, component_name: str, component
         if not version or pd.isna(version) or str(version).strip() == '':
             outdated_rows.append(idx)
             continue
-        if detect_version_type(str(version)) == "beta":
-            continue
         v_semver = parse_semver(version)
         if not v_semver:
             outdated_rows.append(idx)
             continue
-        if latest_prod_semver and v_semver < latest_prod_semver:
+
+        if override:
+            # Exact production match or above is not outdated
+            if latest_prod_semver and v_semver == latest_prod_semver:
+                continue
+            # Beta match is not outdated
+            if latest_beta_semver and v_semver >= latest_beta_semver:
+                continue
+            # Above production is not outdated
+            if latest_prod_semver and v_semver > latest_prod_semver:
+                continue
             outdated_rows.append(idx)
+        else:
+            if detect_version_type(str(version)) == "beta":
+                continue
+            if latest_prod_semver and v_semver < latest_prod_semver:
+                outdated_rows.append(idx)
 
     if not outdated_rows:
         return pd.DataFrame()
