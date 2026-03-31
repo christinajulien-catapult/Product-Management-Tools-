@@ -90,8 +90,8 @@ def calculate_device_component_compliance(df: pd.DataFrame, component_name: str,
             continue
 
         if v_type in ("beta", "alpha"):
-            # Only count as beta if version strictly above latest production
-            if latest_prod_semver and v_semver > latest_prod_semver:
+            # Count as beta if version at or above latest production
+            if latest_prod_semver and v_semver >= latest_prod_semver:
                 beta_count += 1
             else:
                 outdated_count += 1
@@ -190,9 +190,9 @@ def get_devices_needing_update(df: pd.DataFrame, full_df: pd.DataFrame = None) -
             outdated_rows.append(idx)
             continue
 
-        # Beta/alpha only non-outdated if strictly above latest production
+        # Beta/alpha at or above latest production are up to date
         if v_type in ("beta", "alpha"):
-            if latest_prod_semver and v_semver > latest_prod_semver:
+            if latest_prod_semver and v_semver >= latest_prod_semver:
                 continue
             else:
                 outdated_rows.append(idx)
