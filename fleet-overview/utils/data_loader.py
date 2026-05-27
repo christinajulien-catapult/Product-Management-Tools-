@@ -1,6 +1,11 @@
 import pandas as pd
 from datetime import datetime
 
+# Internal/test account customer IDs to exclude from fleet reporting
+EXCLUDED_CUSTOMER_IDS = {
+    '4321',
+}
+
 
 def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -100,6 +105,10 @@ def load_csv_data(file_path_or_buffer):
     for col in string_columns:
         if col in df.columns:
             df[col] = df[col].fillna('')
+
+    # Filter out internal/test accounts
+    if 'customer_id' in df.columns:
+        df = df[~df['customer_id'].isin(EXCLUDED_CUSTOMER_IDS)]
 
     return df
 
