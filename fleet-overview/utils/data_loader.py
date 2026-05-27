@@ -50,9 +50,16 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 def load_csv_data(file_path_or_buffer):
     """Load and parse CSV data with proper dtypes."""
+    # Detect separator from filename
+    sep = ','
+    if isinstance(file_path_or_buffer, str) and file_path_or_buffer.endswith('.tsv'):
+        sep = '\t'
+    elif hasattr(file_path_or_buffer, 'name') and file_path_or_buffer.name.endswith('.tsv'):
+        sep = '\t'
+
     df = pd.read_csv(
         file_path_or_buffer,
-        sep='\t' if isinstance(file_path_or_buffer, str) and file_path_or_buffer.endswith('.tsv') else None,
+        sep=sep,
         dtype={
             'region': str,
             'customer_id': str,
