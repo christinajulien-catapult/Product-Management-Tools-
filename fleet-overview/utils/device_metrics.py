@@ -17,7 +17,7 @@ DEVICE_COMPONENTS = {
 
 
 def _get_device_latest_versions(df: pd.DataFrame):
-    """Get latest production and beta versions for device firmware using adoption-based detection."""
+    """Get latest production and beta versions for device firmware using semver-based detection."""
     column = 'fw_version'
     if column not in df.columns:
         return None, None
@@ -25,9 +25,8 @@ def _get_device_latest_versions(df: pd.DataFrame):
     versions = df[column].dropna().tolist()
     versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
 
-    # Use adoption-based detection for production (most deployed = actual release)
-    latest_prod = get_latest_version_by_adoption(versions, "production")
-    # Use semver-based for beta (highest beta version)
+    # Use semver-based detection (highest version number = latest release)
+    latest_prod = get_latest_version(versions, "production")
     latest_beta = get_latest_version(versions, "beta")
 
     return latest_prod, latest_beta
