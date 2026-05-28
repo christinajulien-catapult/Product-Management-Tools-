@@ -17,7 +17,14 @@ DEVICE_COMPONENTS = {
 
 
 def _get_device_latest_versions(df: pd.DataFrame):
-    """Get latest production and beta versions for device firmware using semver-based detection."""
+    """
+    Get latest production and beta versions for device firmware.
+
+    Production: determined by adoption count (most deployed = actual release).
+    Beta: the highest semver version above the production version. This catches
+    builds like 1.3.0 that lack a '-beta' tag but are newer than the current
+    production release and only deployed to a small number of devices.
+    """
     column = 'fw_version'
     if column not in df.columns:
         return None, None
@@ -25,19 +32,42 @@ def _get_device_latest_versions(df: pd.DataFrame):
     versions = df[column].dropna().tolist()
     versions = [v for v in versions if isinstance(v, str) and v.strip() != '']
 
-    # Use semver-based detection (highest version number = latest release)
-    latest_prod = get_latest_version(versions, "production")
-    latest_beta = get_latest_version(versions, "beta")
+    # Use adoption-based detection for production (most deployed = actual release)
+    latest_prod = get_latest_version_by_adoption(versions, "production")
+    latest_prod_semver = parse_semver(latest_prod) if latest_prod else None
 
-    return latest_prod, latest_beta
+    # For beta: find the highest semver above the production version
+    # This includes both explicitly tagged beta AND untagged builds above production
+    latest_beta_explicit = get_latest_version(versions, "beta")
+    latest_beta_semver = parse_semver(latest_beta_explicit) if latest_beta_explicit else None
+
+    # Also check for untagged versions above production (e.g. 1.3.0+hash)
+    if latest_prod_semver:
+        above_prod = [v for v in versions if parse_semver(v) and parse_semver(v) > latest_prod_semver]
+        if above_prod:
+            highest_above = max(above_prod, key=lambda v: parse_semver(v))
+            highest_above_semver = parse_semver(highest_above)
+            if not latest_beta_semver or highest_above_semver > latest_beta_semver:
+                latest_beta_explicit = highest_above
+                latest_beta_semver = highest_above_semver
+
+    return latest_prod, latest_beta_explicit
+
+
+def _is_above_production(version: str, latest_prod_semver) -> bool:
+    """Check if a version's semver is strictly above the latest production."""
+    if not latest_prod_semver:
+        return False
+    v_semver = parse_semver(version)
+    return v_semver is not None and v_semver > latest_prod_semver
 
 
 def calculate_device_component_compliance(df: pd.DataFrame, component_name: str, column: str, full_df: pd.DataFrame = None) -> Dict:
     """
     Calculate compliance for a device component using adoption-based version detection.
 
-    This overrides the standard calculate_component_compliance to use
-    get_latest_version_by_adoption for production versions.
+    Versions above the adoption-based production version are counted as beta,
+    even if not explicitly tagged with '-beta'.
     """
     import math
 
@@ -88,12 +118,16 @@ def calculate_device_component_compliance(df: pd.DataFrame, component_name: str,
             unknown_count += 1
             continue
 
+        # Explicitly tagged beta/alpha
         if v_type in ("beta", "alpha"):
-            # Count as beta if version at or above latest production
             if latest_prod_semver and v_semver >= latest_prod_semver:
                 beta_count += 1
             else:
                 outdated_count += 1
+        # Version above production = beta (unreleased/limited rollout)
+        elif _is_above_production(version, latest_prod_semver):
+            beta_count += 1
+        # On latest production
         elif latest_prod_semver and v_semver >= latest_prod_semver:
             production_count += 1
         else:
@@ -141,7 +175,8 @@ def calculate_all_device_compliance(df: pd.DataFrame, full_df: pd.DataFrame = No
 def calculate_device_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = None) -> Tuple[int, float]:
     """
     Calculate device fleet compliance (% of devices with firmware on latest production).
-    Uses adoption-based version detection.
+    Uses adoption-based version detection. Versions above production are not compliant
+    (they are beta).
     """
     if len(df) == 0:
         return 0, 0.0
@@ -151,7 +186,8 @@ def calculate_device_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = 
         return 0, 0.0
 
     version_source = full_df if full_df is not None else df
-    latest_prod, latest_beta = _get_device_latest_versions(version_source)
+    latest_prod, _ = _get_device_latest_versions(version_source)
+    latest_prod_semver = parse_semver(latest_prod) if latest_prod else None
 
     compliant_count = 0
     for _, row in df.iterrows():
@@ -159,7 +195,19 @@ def calculate_device_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = 
         if not version or pd.isna(version) or str(version).strip() == '':
             continue
 
-        if is_on_latest(version, latest_prod, latest_beta):
+        v_type = detect_version_type(version)
+        v_semver = parse_semver(version)
+        if not v_semver:
+            continue
+
+        # Beta/alpha and versions above production are not "compliant"
+        if v_type in ("beta", "alpha"):
+            continue
+        if _is_above_production(version, latest_prod_semver):
+            continue
+
+        # On latest production
+        if latest_prod_semver and v_semver >= latest_prod_semver:
             compliant_count += 1
 
     compliance_percentage = round((compliant_count / len(df)) * 100) if len(df) > 0 else 0
@@ -189,13 +237,17 @@ def get_devices_needing_update(df: pd.DataFrame, full_df: pd.DataFrame = None) -
             outdated_rows.append(idx)
             continue
 
-        # Beta/alpha at or above latest production are up to date
+        # Beta/alpha at or above production are not outdated
         if v_type in ("beta", "alpha"):
             if latest_prod_semver and v_semver >= latest_prod_semver:
                 continue
             else:
                 outdated_rows.append(idx)
                 continue
+
+        # Versions above production are beta, not outdated
+        if _is_above_production(version, latest_prod_semver):
+            continue
 
         if latest_prod_semver and v_semver < latest_prod_semver:
             outdated_rows.append(idx)
