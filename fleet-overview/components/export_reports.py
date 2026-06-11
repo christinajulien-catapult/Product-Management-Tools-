@@ -289,10 +289,15 @@ def generate_pdf_report(
                             pdf.set_font('Helvetica', '', 8)
                             pdf.set_text_color(51, 65, 85)
 
-                        customer = str(row.get('customer_name', '—')) if pd.notna(row.get('customer_name')) and str(row.get('customer_name', '')).strip() else '—'
-                        customer_id = str(row.get('customer_id', '—')) if pd.notna(row.get('customer_id')) and str(row.get('customer_id', '')).strip() else '—'
-                        serial = str(row.get('serial', '—')) if pd.notna(row.get('serial')) else '—'
-                        version = str(row.get('version', '—'))
+                        customer = str(row.get('customer_name', '-')) if pd.notna(row.get('customer_name')) and str(row.get('customer_name', '')).strip() else '-'
+                        customer_id = str(row.get('customer_id', '-')) if pd.notna(row.get('customer_id')) and str(row.get('customer_id', '')).strip() else '-'
+                        serial = str(row.get('serial', '-')) if pd.notna(row.get('serial')) else '-'
+                        version = str(row.get('version', '-'))
+                        # Sanitize for fpdf Latin-1 encoding
+                        customer = customer.encode('latin-1', 'replace').decode('latin-1')
+                        customer_id = customer_id.encode('latin-1', 'replace').decode('latin-1')
+                        serial = serial.encode('latin-1', 'replace').decode('latin-1')
+                        version = version.encode('latin-1', 'replace').decode('latin-1')
 
                         # Truncate long strings to fit cells
                         pdf.cell(50, 6, customer[:30], border=1)
