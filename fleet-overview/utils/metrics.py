@@ -13,6 +13,7 @@ from .version_utils import (
 # Component column mappings
 GREENGRASS_COMPONENTS = {
     'BLE': 'ble_version',
+    'WD-S8-08 BLE': 'wd_s8_08_ble_version',
     'Device Manager': 'device_manager_component_version',
     'Power': 'power_component_version',
     'Raw File Upload': 'raw_file_upload_version',
