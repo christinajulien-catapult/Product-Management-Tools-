@@ -52,6 +52,10 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = df[col].fillna('')
 
+    # Clean boolean strings from version columns (e.g. TRUE/FALSE leaking from sheets)
+    if 'wd_s8_08_ble_version' in df.columns:
+        df.loc[df['wd_s8_08_ble_version'].str.upper().isin(['TRUE', 'FALSE']), 'wd_s8_08_ble_version'] = ''
+
     return df
 
 
@@ -109,6 +113,10 @@ def load_csv_data(file_path_or_buffer):
     for col in string_columns:
         if col in df.columns:
             df[col] = df[col].fillna('')
+
+    # Clean boolean strings from version columns (e.g. TRUE/FALSE leaking from sheets)
+    if 'wd_s8_08_ble_version' in df.columns:
+        df.loc[df['wd_s8_08_ble_version'].str.upper().isin(['TRUE', 'FALSE']), 'wd_s8_08_ble_version'] = ''
 
     # Filter out internal/test accounts
     if 'customer_id' in df.columns:
