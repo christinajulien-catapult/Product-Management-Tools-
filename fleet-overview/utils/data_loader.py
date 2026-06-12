@@ -18,6 +18,7 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         'pmu_version', 'device_version', 'retriever_version',
         'power_component_version', 'ble_version', 'raw_file_upload_version',
         'device_manager_component_version', 'dock_image_version', 'dock_pmu_version',
+        'wd_s8_08_ble_version',
         'components_needs_update', 'needs_update'
     ]
     for col in string_columns:
@@ -44,6 +45,7 @@ def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         'pmu_version', 'device_version', 'retriever_version',
         'power_component_version', 'ble_version', 'raw_file_upload_version',
         'device_manager_component_version', 'dock_image_version', 'dock_pmu_version',
+        'wd_s8_08_ble_version',
         'components_needs_update', 'needs_update'
     ]
     for col in version_columns:
@@ -80,6 +82,7 @@ def load_csv_data(file_path_or_buffer):
             'device_manager_component_version': str,
             'dock_image_version': str,
             'dock_pmu_version': str,
+            'wd_s8_08_ble_version': str,
             'components_needs_update': str,
             'needs_update': str,
         }
@@ -100,6 +103,7 @@ def load_csv_data(file_path_or_buffer):
         'pmu_version', 'device_version', 'retriever_version',
         'power_component_version', 'ble_version', 'raw_file_upload_version',
         'device_manager_component_version', 'dock_image_version', 'dock_pmu_version',
+        'wd_s8_08_ble_version',
         'components_needs_update', 'needs_update'
     ]
     for col in string_columns:
