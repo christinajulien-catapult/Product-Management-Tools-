@@ -279,7 +279,11 @@ def calculate_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = None) -
 
             version = row.get(column, '')
             if not version or pd.isna(version) or version.strip() == '':
-                # Skip missing versions (don't count as non-compliant)
+                # Empty WD-S8-08 BLE means needs updating
+                if column == 'wd_s8_08_ble_version':
+                    is_compliant = False
+                    break
+                # Skip other missing versions (don't count as non-compliant)
                 continue
 
             latest = latest_versions.get(column, {})
