@@ -13,7 +13,6 @@ from .version_utils import (
 # Component column mappings
 GREENGRASS_COMPONENTS = {
     'BLE': 'ble_version',
-    'WD-S8-08 BLE': 'wd_s8_08_ble_version',
     'Device Manager': 'device_manager_component_version',
     'Power': 'power_component_version',
     'Raw File Upload': 'raw_file_upload_version',
@@ -279,11 +278,7 @@ def calculate_fleet_compliance(df: pd.DataFrame, full_df: pd.DataFrame = None) -
 
             version = row.get(column, '')
             if not version or pd.isna(version) or version.strip() == '':
-                # Empty WD-S8-08 BLE means needs updating
-                if column == 'wd_s8_08_ble_version':
-                    is_compliant = False
-                    break
-                # Skip other missing versions (don't count as non-compliant)
+                # Skip missing versions (don't count as non-compliant)
                 continue
 
             latest = latest_versions.get(column, {})
