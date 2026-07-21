@@ -383,6 +383,14 @@ FILE_UPLOADER_CSS = """
             font-family: 'Montserrat', sans-serif !important;
         }
 
+        /* Make all uploader text visible */
+        [data-testid="stFileUploader"] small,
+        [data-testid="stFileUploader"] span,
+        [data-testid="stFileUploader"] p,
+        [data-testid="stFileUploader"] div {
+            color: #94a3b8 !important;
+        }
+
         /* Hide the default label */
         [data-testid="stFileUploader"] label {
             display: none !important;
@@ -432,47 +440,47 @@ def render_landing_page():
         transition: all 0.2s ease;
     """
 
+    # CSS to make the card buttons look like the cards themselves
+    st.markdown(
+        """
+        <style>
+            /* Landing card buttons - make them look like cards */
+            div[data-testid="stColumns"] .stButton button[kind="secondary"] {
+                background: rgba(30, 41, 59, 0.7) !important;
+                border: 1px solid #334155 !important;
+                border-radius: 16px !important;
+                padding: 40px 30px !important;
+                text-align: center !important;
+                transition: all 0.2s ease !important;
+                height: auto !important;
+                min-height: 200px !important;
+            }
+            div[data-testid="stColumns"] .stButton button[kind="secondary"]:hover {
+                border-color: #3b82f6 !important;
+                background: rgba(30, 41, 59, 0.9) !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2) !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     with col2:
-        st.markdown(
-            f"""
-            <div style="{card_style}">
-                <div style="font-size: 48px; margin-bottom: 16px;">🔌</div>
-                <h2 style="color: #f1f5f9; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; font-family: 'Montserrat', sans-serif;">
-                    Docks
-                </h2>
-                <p style="color: #94a3b8; font-size: 14px; font-family: 'Montserrat', sans-serif; margin: 0 0 4px 0;">
-                    Monitor Greengrass & image component updates
-                </p>
-                <p style="color: #64748b; font-size: 12px; font-family: 'Montserrat', sans-serif; margin: 0;">
-                    CSV, TSV, or Google Sheets
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        if st.button("Open Docks", use_container_width=True, key="landing_docks"):
+        if st.button(
+            "🔌\n\n**Docks**\n\nMonitor Greengrass & image component updates\n\nCSV, TSV, or Google Sheets",
+            use_container_width=True,
+            key="landing_docks"
+        ):
             st.session_state['fleet_mode'] = 'docks'
             st.rerun()
 
     with col3:
-        st.markdown(
-            f"""
-            <div style="{card_style}">
-                <div style="font-size: 48px; margin-bottom: 16px;">📡</div>
-                <h2 style="color: #f1f5f9; font-size: 24px; font-weight: 700; margin: 0 0 8px 0; font-family: 'Montserrat', sans-serif;">
-                    Devices
-                </h2>
-                <p style="color: #94a3b8; font-size: 14px; font-family: 'Montserrat', sans-serif; margin: 0 0 4px 0;">
-                    Monitor Vector 8 firmware versions
-                </p>
-                <p style="color: #64748b; font-size: 12px; font-family: 'Montserrat', sans-serif; margin: 0;">
-                    JSON export
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        if st.button("Open Devices", use_container_width=True, key="landing_devices"):
+        if st.button(
+            "📡\n\n**Devices**\n\nMonitor Vector 8 firmware versions\n\nJSON export",
+            use_container_width=True,
+            key="landing_devices"
+        ):
             st.session_state['fleet_mode'] = 'devices'
             st.rerun()
 
