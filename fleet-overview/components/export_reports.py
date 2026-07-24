@@ -58,11 +58,11 @@ def _get_outdated_docks_for_pdf(df: pd.DataFrame, component_name: str, component
     if not outdated_rows:
         return pd.DataFrame()
 
-    result = df.loc[outdated_rows][['serial', 'customer_id']].copy()
+    result = df.loc[outdated_rows][['serial', 'customer_name', 'customer_id']].copy()
     result['version'] = df.loc[outdated_rows, column].apply(
         lambda v: get_display_version(str(v)) if pd.notna(v) and str(v).strip() else 'N/A'
     )
-    return result.sort_values('customer_id', na_position='last')
+    return result.sort_values('customer_name', na_position='last')
 
 
 def generate_pdf_report(
@@ -262,9 +262,10 @@ def generate_pdf_report(
                     pdf.set_font('Helvetica', 'B', 9)
                     pdf.set_fill_color(241, 245, 249)
                     pdf.set_text_color(51, 65, 85)
-                    pdf.cell(40, 7, 'Customer ID', border=1, fill=True, align='C')
-                    pdf.cell(50, 7, 'Serial', border=1, fill=True)
-                    pdf.cell(50, 7, 'Current Version', border=1, fill=True, align='C')
+                    pdf.cell(50, 7, 'Customer', border=1, fill=True)
+                    pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                    pdf.cell(45, 7, 'Serial', border=1, fill=True)
+                    pdf.cell(40, 7, 'Current Version', border=1, fill=True, align='C')
                     pdf.ln()
 
                     # Table rows
@@ -280,25 +281,29 @@ def generate_pdf_report(
                             pdf.set_font('Helvetica', 'B', 9)
                             pdf.set_fill_color(241, 245, 249)
                             pdf.set_text_color(51, 65, 85)
-                            pdf.cell(40, 7, 'Customer ID', border=1, fill=True, align='C')
-                            pdf.cell(50, 7, 'Serial', border=1, fill=True)
-                            pdf.cell(50, 7, 'Current Version', border=1, fill=True, align='C')
+                            pdf.cell(50, 7, 'Customer', border=1, fill=True)
+                            pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                            pdf.cell(45, 7, 'Serial', border=1, fill=True)
+                            pdf.cell(40, 7, 'Current Version', border=1, fill=True, align='C')
                             pdf.ln()
                             pdf.set_font('Helvetica', '', 8)
                             pdf.set_text_color(51, 65, 85)
 
+                        customer = str(row.get('customer_name', '-')) if pd.notna(row.get('customer_name')) and str(row.get('customer_name', '')).strip() else '-'
                         customer_id = str(row.get('customer_id', '-')) if pd.notna(row.get('customer_id')) and str(row.get('customer_id', '')).strip() else '-'
                         serial = str(row.get('serial', '-')) if pd.notna(row.get('serial')) else '-'
                         version = str(row.get('version', '-'))
                         # Sanitize for fpdf Latin-1 encoding
+                        customer = customer.encode('latin-1', 'replace').decode('latin-1')
                         customer_id = customer_id.encode('latin-1', 'replace').decode('latin-1')
                         serial = serial.encode('latin-1', 'replace').decode('latin-1')
                         version = version.encode('latin-1', 'replace').decode('latin-1')
 
-                        pdf.cell(40, 6, customer_id[:18], border=1, align='C')
-                        pdf.cell(50, 6, serial[:28], border=1)
+                        pdf.cell(50, 6, customer[:30], border=1)
+                        pdf.cell(30, 6, customer_id[:18], border=1, align='C')
+                        pdf.cell(45, 6, serial[:28], border=1)
                         pdf.set_text_color(239, 68, 68)
-                        pdf.cell(50, 6, version[:24], border=1, align='C')
+                        pdf.cell(40, 6, version[:24], border=1, align='C')
                         pdf.set_text_color(51, 65, 85)
                         pdf.ln()
 
@@ -590,11 +595,11 @@ def generate_device_pdf_report(
                     continue
 
                 # Aggregate by customer
-                customer_groups = region_df.groupby('customer_id').agg(
+                customer_groups = region_df.groupby(['customer_name', 'customer_id']).agg(
                     device_count=('serial', 'count'),
                     serials=('serial', lambda x: ', '.join(x.astype(str).head(10))),
                     versions=('display_version', lambda x: ', '.join(x.unique()))
-                ).reset_index().sort_values('customer_id', na_position='last')
+                ).reset_index().sort_values('customer_name', na_position='last')
 
                 if pdf.get_y() > 240:
                     pdf.add_page()
@@ -608,10 +613,11 @@ def generate_device_pdf_report(
                 pdf.set_font('Helvetica', 'B', 9)
                 pdf.set_fill_color(241, 245, 249)
                 pdf.set_text_color(51, 65, 85)
-                pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                pdf.cell(45, 7, 'Customer', border=1, fill=True)
+                pdf.cell(25, 7, 'Customer ID', border=1, fill=True, align='C')
                 pdf.cell(15, 7, 'Count', border=1, fill=True, align='C')
-                pdf.cell(40, 7, 'Current Version(s)', border=1, fill=True, align='C')
-                pdf.cell(105, 7, 'Serials', border=1, fill=True)
+                pdf.cell(35, 7, 'Current Version(s)', border=1, fill=True, align='C')
+                pdf.cell(70, 7, 'Serials', border=1, fill=True)
                 pdf.ln()
 
                 # Table rows
@@ -626,25 +632,30 @@ def generate_device_pdf_report(
                         pdf.set_font('Helvetica', 'B', 9)
                         pdf.set_fill_color(241, 245, 249)
                         pdf.set_text_color(51, 65, 85)
-                        pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                        pdf.cell(45, 7, 'Customer', border=1, fill=True)
+                        pdf.cell(25, 7, 'Customer ID', border=1, fill=True, align='C')
                         pdf.cell(15, 7, 'Count', border=1, fill=True, align='C')
-                        pdf.cell(40, 7, 'Current Version(s)', border=1, fill=True, align='C')
-                        pdf.cell(105, 7, 'Serials', border=1, fill=True)
+                        pdf.cell(35, 7, 'Current Version(s)', border=1, fill=True, align='C')
+                        pdf.cell(70, 7, 'Serials', border=1, fill=True)
                         pdf.ln()
                         pdf.set_font('Helvetica', '', 8)
                         pdf.set_text_color(51, 65, 85)
 
+                    customer = str(row['customer_name']) if row['customer_name'] else '-'
+                    if not customer.strip():
+                        customer = '-'
                     cid = str(row['customer_id']) if row['customer_id'] else '-'
                     count = str(row['device_count'])
                     vers = str(row['versions'])
                     serials = str(row['serials'])
 
-                    pdf.cell(30, 6, cid[:15], border=1, align='C')
+                    pdf.cell(45, 6, customer[:26], border=1)
+                    pdf.cell(25, 6, cid[:15], border=1, align='C')
                     pdf.cell(15, 6, count, border=1, align='C')
                     pdf.set_text_color(239, 68, 68)
-                    pdf.cell(40, 6, vers[:24], border=1, align='C')
+                    pdf.cell(35, 6, vers[:20], border=1, align='C')
                     pdf.set_text_color(51, 65, 85)
-                    pdf.cell(105, 6, serials[:65], border=1)
+                    pdf.cell(70, 6, serials[:42], border=1)
                     pdf.ln()
 
                 pdf.ln(6)
@@ -678,7 +689,7 @@ def generate_device_pdf_report(
                     lambda v: get_display_version(str(v)) if pd.notna(v) else 'N/A'
                 )
 
-                customer_groups = region_flagged.groupby('customer_id').agg(
+                customer_groups = region_flagged.groupby(['customer_name', 'customer_id']).agg(
                     device_count=('serial', 'count'),
                     serials=('serial', lambda x: ', '.join(x.astype(str).head(10))),
                     versions=('display_version', lambda x: ', '.join(x.unique())),
@@ -694,10 +705,11 @@ def generate_device_pdf_report(
                 pdf.set_font('Helvetica', 'B', 9)
                 pdf.set_fill_color(254, 226, 226)
                 pdf.set_text_color(51, 65, 85)
-                pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                pdf.cell(45, 7, 'Customer', border=1, fill=True)
+                pdf.cell(25, 7, 'Customer ID', border=1, fill=True, align='C')
                 pdf.cell(20, 7, 'Devices', border=1, fill=True, align='C')
-                pdf.cell(35, 7, 'Version', border=1, fill=True, align='C')
-                pdf.cell(105, 7, 'Serials', border=1, fill=True)
+                pdf.cell(30, 7, 'Version', border=1, fill=True, align='C')
+                pdf.cell(70, 7, 'Serials', border=1, fill=True)
                 pdf.ln()
 
                 pdf.set_font('Helvetica', '', 8)
@@ -711,25 +723,30 @@ def generate_device_pdf_report(
                         pdf.set_font('Helvetica', 'B', 9)
                         pdf.set_fill_color(254, 226, 226)
                         pdf.set_text_color(51, 65, 85)
-                        pdf.cell(30, 7, 'Customer ID', border=1, fill=True, align='C')
+                        pdf.cell(45, 7, 'Customer', border=1, fill=True)
+                        pdf.cell(25, 7, 'Customer ID', border=1, fill=True, align='C')
                         pdf.cell(20, 7, 'Devices', border=1, fill=True, align='C')
-                        pdf.cell(35, 7, 'Version', border=1, fill=True, align='C')
-                        pdf.cell(105, 7, 'Serials', border=1, fill=True)
+                        pdf.cell(30, 7, 'Version', border=1, fill=True, align='C')
+                        pdf.cell(70, 7, 'Serials', border=1, fill=True)
                         pdf.ln()
                         pdf.set_font('Helvetica', '', 8)
                         pdf.set_text_color(51, 65, 85)
 
+                    customer = str(row['customer_name']) if row['customer_name'] else '-'
+                    if not customer.strip():
+                        customer = '-'
                     cid = str(row['customer_id']) if row['customer_id'] else '-'
                     count = str(row['device_count'])
                     vers = str(row['versions'])
                     serials = str(row['serials'])
 
-                    pdf.cell(30, 6, cid[:15], border=1, align='C')
+                    pdf.cell(45, 6, customer[:26], border=1)
+                    pdf.cell(25, 6, cid[:15], border=1, align='C')
                     pdf.set_text_color(239, 68, 68)
                     pdf.cell(20, 6, count, border=1, align='C')
-                    pdf.cell(35, 6, vers[:20], border=1, align='C')
+                    pdf.cell(30, 6, vers[:18], border=1, align='C')
                     pdf.set_text_color(51, 65, 85)
-                    pdf.cell(105, 6, serials[:65], border=1)
+                    pdf.cell(70, 6, serials[:42], border=1)
                     pdf.ln()
 
                 pdf.ln(6)
