@@ -444,8 +444,12 @@ def render_landing_page():
         with open(dock_img_path, "rb") as f:
             dock_img_b64 = base64.b64encode(f.read()).decode()
 
-    # Device SVG as a data URI
-    device_svg = "data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='45' y='20' width='110' height='160' rx='16' fill='%23334155' stroke='%23475569' stroke-width='2'/%3E%3Crect x='60' y='40' width='80' height='60' rx='8' fill='%231e293b' stroke='%23475569' stroke-width='1.5'/%3E%3Ccircle cx='100' cy='140' r='12' fill='%231e293b' stroke='%23475569' stroke-width='1.5'/%3E%3Crect x='75' y='55' width='42' height='6' rx='3' fill='%233b82f6' opacity='0.6'/%3E%3Crect x='75' y='67' width='28' height='6' rx='3' fill='%233b82f6' opacity='0.4'/%3E%3Crect x='75' y='79' width='35' height='6' rx='3' fill='%233b82f6' opacity='0.3'/%3E%3C/svg%3E"
+    # Load device image as base64
+    device_img_path = os.path.join(os.path.dirname(__file__), "assets", "device.png")
+    device_img_b64 = ""
+    if os.path.exists(device_img_path):
+        with open(device_img_path, "rb") as f:
+            device_img_b64 = base64.b64encode(f.read()).decode()
 
     # Single CSS block that targets buttons by their key attribute
     st.markdown(
@@ -485,13 +489,13 @@ def render_landing_page():
             /* Dock card - dock image */
             [data-testid="stHorizontalBlock"] [data-testid="stColumn"]:nth-child(2) .stButton button {{
                 background-image: url("data:image/png;base64,{dock_img_b64}") !important;
-                background-position: center 35px !important;
-                background-size: 210px auto !important;
+                background-position: center 30px !important;
+                background-size: 260px auto !important;
             }}
-            /* Device card - device SVG */
+            /* Device card - device image */
             [data-testid="stHorizontalBlock"] [data-testid="stColumn"]:nth-child(3) .stButton button {{
-                background-image: url("{device_svg}") !important;
-                background-position: center 25px !important;
+                background-image: url("data:image/png;base64,{device_img_b64}") !important;
+                background-position: center 30px !important;
                 background-size: 180px auto !important;
             }}
         </style>
