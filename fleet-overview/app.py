@@ -438,88 +438,93 @@ def render_landing_page():
         with open(dock_img_path, "rb") as f:
             dock_img_b64 = base64.b64encode(f.read()).decode()
 
-    # CSS to style the landing card buttons
+    col1, col2, col3, col4 = st.columns([1, 1.5, 1.5, 1])
+
+    with col2:
+        # Dock card: image + label as HTML, then a full-width invisible button overlaid
+        st.markdown(
+            f"""
+            <div style="
+                background: rgba(30, 41, 59, 0.8);
+                border: 1px solid #334155;
+                border-radius: 20px;
+                padding: 35px 30px 30px 30px;
+                text-align: center;
+            ">
+                <img src="data:image/png;base64,{dock_img_b64}"
+                     style="width: 200px; height: auto; margin-bottom: 20px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));" />
+                <h2 style="color: #f1f5f9; font-size: 22px; font-weight: 700; margin: 0; font-family: 'Montserrat', sans-serif;">
+                    Vector 8 Dock
+                </h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("Open Docks", use_container_width=True, key="landing_docks"):
+            st.session_state['fleet_mode'] = 'docks'
+            st.rerun()
+
+    with col3:
+        # Device card: SVG icon + label
+        st.markdown(
+            """
+            <div style="
+                background: rgba(30, 41, 59, 0.8);
+                border: 1px solid #334155;
+                border-radius: 20px;
+                padding: 35px 30px 30px 30px;
+                text-align: center;
+            ">
+                <div style="width: 200px; height: 152px; margin: 0 auto 20px auto; display: flex; align-items: center; justify-content: center;">
+                    <svg width="140" height="140" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="35" y="15" width="90" height="130" rx="14" fill="#334155" stroke="#475569" stroke-width="2"/>
+                        <rect x="48" y="30" width="64" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+                        <circle cx="80" cy="110" r="10" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+                        <rect x="60" y="40" width="35" height="5" rx="2.5" fill="#3b82f6" opacity="0.6"/>
+                        <rect x="60" y="50" width="24" height="5" rx="2.5" fill="#3b82f6" opacity="0.4"/>
+                        <rect x="60" y="60" width="30" height="5" rx="2.5" fill="#3b82f6" opacity="0.3"/>
+                    </svg>
+                </div>
+                <h2 style="color: #f1f5f9; font-size: 22px; font-weight: 700; margin: 0; font-family: 'Montserrat', sans-serif;">
+                    Vector 8 Device
+                </h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("Open Devices", use_container_width=True, key="landing_devices"):
+            st.session_state['fleet_mode'] = 'devices'
+            st.rerun()
+
+    # Style the buttons to blend with the cards
     st.markdown(
-        f"""
+        """
         <style>
-            /* Landing card buttons */
-            .landing-dock-card .stButton button,
-            .landing-device-card .stButton button {{
+            /* Make landing buttons blend seamlessly below cards */
+            button[data-testid="stBaseButton-secondary"][key="landing_docks"],
+            button[data-testid="stBaseButton-secondary"][key="landing_devices"] {
                 background: rgba(30, 41, 59, 0.8) !important;
                 border: 1px solid #334155 !important;
-                border-radius: 20px !important;
-                padding: 30px 20px 25px 20px !important;
-                text-align: center !important;
-                transition: all 0.3s ease !important;
-                height: auto !important;
-                min-height: 300px !important;
-                cursor: pointer !important;
-                color: white !important;
-            }}
-            .landing-dock-card .stButton button:hover,
-            .landing-device-card .stButton button:hover {{
-                border-color: #3b82f6 !important;
-                background: rgba(30, 41, 59, 0.95) !important;
-                transform: translateY(-4px) !important;
-                box-shadow: 0 8px 30px rgba(59, 130, 246, 0.25) !important;
-            }}
-            /* Dock card: show image as background above text */
-            .landing-dock-card .stButton button {{
-                background-image: url("data:image/png;base64,{dock_img_b64}") !important;
-                background-repeat: no-repeat !important;
-                background-position: center 30px !important;
-                background-size: 200px auto !important;
-                padding-top: 210px !important;
-                background-color: rgba(30, 41, 59, 0.8) !important;
-                background-blend-mode: normal !important;
-            }}
-            .landing-dock-card .stButton button:hover {{
-                background-color: rgba(30, 41, 59, 0.95) !important;
-            }}
-            /* Device card: show SVG icon as background */
-            .landing-device-card .stButton button {{
-                background-image: url("data:image/svg+xml,%3Csvg width='160' height='160' viewBox='0 0 160 160' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='35' y='15' width='90' height='130' rx='14' fill='%23334155' stroke='%23475569' stroke-width='2'/%3E%3Crect x='48' y='30' width='64' height='50' rx='6' fill='%231e293b' stroke='%23475569' stroke-width='1.5'/%3E%3Ccircle cx='80' cy='110' r='10' fill='%231e293b' stroke='%23475569' stroke-width='1.5'/%3E%3Crect x='60' y='40' width='35' height='5' rx='2.5' fill='%233b82f6' opacity='0.6'/%3E%3Crect x='60' y='50' width='24' height='5' rx='2.5' fill='%233b82f6' opacity='0.4'/%3E%3Crect x='60' y='60' width='30' height='5' rx='2.5' fill='%233b82f6' opacity='0.3'/%3E%3C/svg%3E") !important;
-                background-repeat: no-repeat !important;
-                background-position: center 25px !important;
-                background-size: 160px auto !important;
-                padding-top: 210px !important;
-                background-color: rgba(30, 41, 59, 0.8) !important;
-                background-blend-mode: normal !important;
-            }}
-            .landing-device-card .stButton button:hover {{
-                background-color: rgba(30, 41, 59, 0.95) !important;
-            }}
-            /* Style the button text */
-            .landing-dock-card .stButton button p,
-            .landing-device-card .stButton button p {{
+                border-top: none !important;
+                border-radius: 0 0 20px 20px !important;
+                margin-top: -20px !important;
+                padding: 12px 20px !important;
                 font-family: 'Montserrat', sans-serif !important;
-                font-size: 20px !important;
-                font-weight: 700 !important;
+                font-weight: 600 !important;
+                color: #94a3b8 !important;
+                transition: all 0.3s ease !important;
+            }
+            button[data-testid="stBaseButton-secondary"][key="landing_docks"]:hover,
+            button[data-testid="stBaseButton-secondary"][key="landing_devices"]:hover {
+                background: rgba(30, 41, 59, 0.95) !important;
+                border-color: #3b82f6 !important;
                 color: #f1f5f9 !important;
-                margin: 0 !important;
-            }}
+                box-shadow: 0 8px 30px rgba(59, 130, 246, 0.25) !important;
+            }
         </style>
         """,
         unsafe_allow_html=True
     )
-
-    col1, col2, col3, col4 = st.columns([1, 1.5, 1.5, 1])
-
-    with col2:
-        with st.container():
-            st.markdown('<div class="landing-dock-card">', unsafe_allow_html=True)
-            if st.button("Vector 8 Dock", use_container_width=True, key="landing_docks"):
-                st.session_state['fleet_mode'] = 'docks'
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    with col3:
-        with st.container():
-            st.markdown('<div class="landing-device-card">', unsafe_allow_html=True)
-            if st.button("Vector 8 Device", use_container_width=True, key="landing_devices"):
-                st.session_state['fleet_mode'] = 'devices'
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ===== DOCK UPLOAD =====
