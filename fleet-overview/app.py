@@ -533,7 +533,7 @@ def render_dock_upload():
         """
         <div style="text-align: center; margin-top: 20px; margin-bottom: 40px;">
             <p style="color: #64748b; font-size: 16px; font-family: 'Montserrat', sans-serif;">
-                Upload a CSV/TSV file or connect to Google Sheets to view your dock fleet status
+                Upload a CSV or TSV file to view your dock fleet status
             </p>
         </div>
         """,
@@ -547,76 +547,27 @@ def render_dock_upload():
             go_home()
             st.rerun()
 
-    # Data source tabs
-    tab1, tab2 = st.tabs(["📄 CSV Upload", "📊 Google Sheets"])
+    st.markdown(FILE_UPLOADER_CSS, unsafe_allow_html=True)
 
-    with tab1:
-        st.markdown(FILE_UPLOADER_CSS, unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        uploaded_file = st.file_uploader(
+            "Drop your file here",
+            type=['csv', 'tsv'],
+            help="Upload your dock fleet data export",
+            key="main_uploader",
+            label_visibility="collapsed"
+        )
 
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            uploaded_file = st.file_uploader(
-                "Drop your file here",
-                type=['csv', 'tsv'],
-                help="Upload your dock fleet data export",
-                key="main_uploader",
-                label_visibility="collapsed"
-            )
-
-            if uploaded_file is not None:
-                try:
-                    df = load_csv_data(uploaded_file)
-                    st.session_state['loaded_df'] = df
-                    st.session_state['last_refresh_time'] = datetime.now()
-                    st.session_state['data_source_type'] = 'csv'
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error loading data: {str(e)}")
-
-    with tab2:
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if not check_credentials_exist():
-                st.warning(
-                    "**Setup Required**\n\n"
-                    "To use Google Sheets, you need a service account:\n"
-                    "1. Create a Google Cloud project\n"
-                    "2. Enable Google Sheets API\n"
-                    "3. Create a service account\n"
-                    "4. Download credentials JSON\n"
-                    "5. Save as `credentials.json` in this folder"
-                )
-            else:
-                service_email = get_service_account_email()
-                if service_email:
-                    with st.expander("Service account email (for sharing)"):
-                        st.code(service_email, language=None)
-                        st.caption("Share your Google Sheet with this email")
-
-            google_sheet_url = st.text_input(
-                "Google Sheet URL",
-                value=st.session_state.get('google_sheet_url', ''),
-                placeholder="https://docs.google.com/spreadsheets/d/...",
-                help="Paste the full URL or just the sheet ID"
-            )
-
-            if google_sheet_url:
-                st.session_state['google_sheet_url'] = google_sheet_url
-
-            if st.button(
-                "🔄 Load from Google Sheets",
-                use_container_width=True,
-                disabled=not google_sheet_url or not check_credentials_exist()
-            ):
-                try:
-                    with st.spinner("Fetching data from Google Sheets..."):
-                        df = load_data('google_sheets', google_sheet_url)
-                        st.session_state['loaded_df'] = df
-                        st.session_state['last_refresh_time'] = datetime.now()
-                        st.session_state['data_source_type'] = 'google_sheets'
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error loading from Google Sheets: {str(e)}")
+        if uploaded_file is not None:
+            try:
+                df = load_csv_data(uploaded_file)
+                st.session_state['loaded_df'] = df
+                st.session_state['last_refresh_time'] = datetime.now()
+                st.session_state['data_source_type'] = 'csv'
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error loading data: {str(e)}")
 
     # Sample data option
     st.markdown("<br>", unsafe_allow_html=True)
