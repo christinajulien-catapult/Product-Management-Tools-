@@ -526,9 +526,16 @@ def render_landing_page():
 
 def render_dock_upload():
     """Render the dock data upload screen."""
+    # Back button at top
+    col_back, _ = st.columns([0.15, 0.85])
+    with col_back:
+        if st.button("← Home", key="dock_upload_back"):
+            go_home()
+            st.rerun()
+
     st.markdown(
         """
-        <div style="text-align: center; margin-top: 40px;">
+        <div style="text-align: center; margin-top: 20px;">
             <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif;">
                 Vector Dock Fleet Overview
             </h1>
@@ -547,13 +554,6 @@ def render_dock_upload():
         """,
         unsafe_allow_html=True
     )
-
-    # Back button
-    col_back, _ = st.columns([0.15, 0.85])
-    with col_back:
-        if st.button("← Home", key="dock_upload_back"):
-            go_home()
-            st.rerun()
 
     st.markdown(FILE_UPLOADER_CSS, unsafe_allow_html=True)
 
@@ -733,9 +733,16 @@ def render_dock_dashboard():
 
 def render_device_upload():
     """Render the device data upload screen."""
+    # Back button at top
+    col_back, _ = st.columns([0.15, 0.85])
+    with col_back:
+        if st.button("← Home", key="device_upload_back"):
+            go_home()
+            st.rerun()
+
     st.markdown(
         """
-        <div style="text-align: center; margin-top: 40px;">
+        <div style="text-align: center; margin-top: 20px;">
             <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #f1f5f9; font-family: 'Montserrat', sans-serif;">
                 Vector Device Fleet Overview
             </h1>
@@ -754,13 +761,6 @@ def render_device_upload():
         """,
         unsafe_allow_html=True
     )
-
-    # Back button
-    col_back, _ = st.columns([0.15, 0.85])
-    with col_back:
-        if st.button("← Home", key="device_upload_back"):
-            go_home()
-            st.rerun()
 
     st.markdown(FILE_UPLOADER_CSS, unsafe_allow_html=True)
 
