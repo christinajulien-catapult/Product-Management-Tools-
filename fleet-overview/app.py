@@ -388,7 +388,7 @@ FILE_UPLOADER_CSS = """
         [data-testid="stFileUploader"] span,
         [data-testid="stFileUploader"] p,
         [data-testid="stFileUploader"] div {
-            color: #94a3b8 !important;
+            color: #f1f5f9 !important;
         }
 
         /* Hide the default label */
