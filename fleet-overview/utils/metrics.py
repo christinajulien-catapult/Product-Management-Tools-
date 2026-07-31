@@ -33,7 +33,7 @@ VERSION_OVERRIDES = {
     },
     'device_manager_component_version': {
         'latest_production': (3, 8, 0),
-        'latest_beta': None,
+        'latest_beta': (3, 9, 0),
     },
 }
 
@@ -151,12 +151,11 @@ def calculate_component_compliance(df: pd.DataFrame, component_name: str, column
             continue
 
         if override:
-            # Use override logic: check production first, then beta
-            if latest_prod_semver and v_semver == latest_prod_semver:
-                production_count += 1
-            elif latest_beta_semver and v_semver >= latest_beta_semver:
+            v_type = detect_version_type(version)
+            # Use override logic: check version type tag first, then semver
+            if v_type == "beta":
                 beta_count += 1
-            elif latest_prod_semver and v_semver > latest_prod_semver:
+            elif latest_prod_semver and v_semver >= latest_prod_semver:
                 production_count += 1
             else:
                 outdated_count += 1
