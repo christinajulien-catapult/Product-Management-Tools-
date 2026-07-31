@@ -379,16 +379,24 @@ FILE_UPLOADER_CSS = """
         }
 
         [data-testid="stFileUploader"] section > div {
-            color: #94a3b8 !important;
+            color: #ffffff !important;
             font-family: 'Montserrat', sans-serif !important;
         }
 
-        /* Make all uploader text visible */
+        /* Make ALL uploader text white */
         [data-testid="stFileUploader"] small,
         [data-testid="stFileUploader"] span,
         [data-testid="stFileUploader"] p,
-        [data-testid="stFileUploader"] div {
-            color: #f1f5f9 !important;
+        [data-testid="stFileUploader"] div,
+        [data-testid="stFileUploader"] section small,
+        [data-testid="stFileUploader"] section span,
+        [data-testid="stFileUploader"] section div,
+        [data-testid="stFileUploader"] section p,
+        [data-testid="stFileUploadDropzone"] span,
+        [data-testid="stFileUploadDropzone"] small,
+        [data-testid="stFileUploadDropzone"] div,
+        [data-testid="stFileUploadDropzone"] p {
+            color: #ffffff !important;
         }
 
         /* Hide the default label */
