@@ -527,9 +527,9 @@ def render_landing_page():
 def render_dock_upload():
     """Render the dock data upload screen."""
     # Back button at top
-    col_back, _ = st.columns([0.15, 0.85])
+    col_back, _ = st.columns([0.2, 0.8])
     with col_back:
-        if st.button("← Home", key="dock_upload_back"):
+        if st.button("← Back", key="dock_upload_back"):
             go_home()
             st.rerun()
 
@@ -734,9 +734,9 @@ def render_dock_dashboard():
 def render_device_upload():
     """Render the device data upload screen."""
     # Back button at top
-    col_back, _ = st.columns([0.15, 0.85])
+    col_back, _ = st.columns([0.2, 0.8])
     with col_back:
-        if st.button("← Home", key="device_upload_back"):
+        if st.button("← Back", key="device_upload_back"):
             go_home()
             st.rerun()
 
