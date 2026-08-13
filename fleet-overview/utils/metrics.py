@@ -35,6 +35,9 @@ VERSION_OVERRIDES = {
         'latest_production': (3, 8, 0),
         'latest_beta': (3, 9, 0),
     },
+    'device_version': {
+        'latest_production': (1, 1, 0),
+    },
 }
 
 

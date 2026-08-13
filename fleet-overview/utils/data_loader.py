@@ -6,6 +6,11 @@ EXCLUDED_CUSTOMER_IDS = {
     '4321',
 }
 
+# Internal/test account customer names to exclude from fleet reporting
+EXCLUDED_CUSTOMER_NAMES = {
+    'Dev Internal Test Account',
+}
+
 
 def parse_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -121,6 +126,8 @@ def load_csv_data(file_path_or_buffer):
     # Filter out internal/test accounts
     if 'customer_id' in df.columns:
         df = df[~df['customer_id'].isin(EXCLUDED_CUSTOMER_IDS)]
+    if 'customer_name' in df.columns:
+        df = df[~df['customer_name'].isin(EXCLUDED_CUSTOMER_NAMES)]
 
     return df
 
