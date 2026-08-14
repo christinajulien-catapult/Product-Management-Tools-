@@ -32,8 +32,7 @@ VERSION_OVERRIDES = {
         'latest_beta': (1, 0, 5),
     },
     'device_manager_component_version': {
-        'latest_production': (3, 8, 0),
-        'latest_beta': (3, 9, 0),
+        'latest_production': (3, 9, 0),
     },
     'device_version': {
         'latest_production': (1, 1, 0),
